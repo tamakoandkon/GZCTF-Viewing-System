@@ -1,0 +1,82 @@
+/* Tweakpane 4.x — myctf 深空主题 + hidden 时完全隐藏 */
+
+/* 根容器：默认跟随 Tweakpane 的 display 控制，hidden 时无残留 */
+.tp-dfwv {
+  --tp-base-background-color: #0b0d17cc;
+  --tp-base-shadow-color: #00000040;
+  --tp-container-background-color: #13172acc;
+  --tp-container-background-color-active: #1a1f36cc;
+  --tp-container-background-color-focus: #181d30cc;
+  --tp-container-background-color-hover: #1a1f36cc;
+  --tp-container-border-radius: 6px;
+  --tp-container-border-color: #2a3050cc;
+  --tp-container-border-color-active: #4a6cf7cc;
+  --tp-container-border-color-focus: #3b5de7cc;
+  --tp-container-border-color-hover: #3a4f80cc;
+  --tp-container-shadow-color: #00000030;
+  --tp-container-text-color: #c8d0e0;
+  --tp-container-text-color-active: #ffffff;
+  --tp-container-text-color-focus: #ffffff;
+  --tp-container-text-color-hover: #e8ecf4;
+  --tp-container-input-background-color: #0b0d17cc;
+  --tp-container-input-background-color-active: #1a1f36cc;
+  --tp-container-input-background-color-focus: #181d30cc;
+  --tp-container-input-background-color-hover: #1a1f36cc;
+  --tp-container-input-border-color: #2a3050cc;
+  --tp-container-input-border-color-active: #4a6cf7cc;
+  --tp-container-input-border-color-focus: #3b5de7cc;
+  --tp-container-input-border-color-hover: #2a3050cc;
+  --tp-container-input-text-color: #c8d0e0;
+  --tp-container-input-text-color-active: #ffffff;
+  --tp-container-input-text-color-focus: #ffffff;
+  --tp-container-input-text-color-hover: #e8ecf4;
+  --tp-container-list-background-color: #0b0d17e6;
+  --tp-container-list-background-color-active: #1a1f36e6;
+  --tp-container-list-background-color-focus: #181d30e6;
+  --tp-container-list-background-color-hover: #1a1f36e6;
+  --tp-container-monospace-background-color: #0b0d17;
+  --tp-container-monospace-background-color-active: #13172a;
+  --tp-container-monospace-background-color-focus: #13172a;
+  --tp-container-monospace-background-color-hover: #13172a;
+  --tp-container-monospace-text-color: #6b9aff;
+  --tp-container-button-background-color: #2a3050;
+  --tp-container-button-background-color-active: #4a6cf7;
+  --tp-container-button-background-color-focus: #3b5de7;
+  --tp-container-button-background-color-hover: #3a4f80;
+  --tp-container-button-text-color: #c8d0e0;
+  --tp-container-button-text-color-active: #ffffff;
+  --tp-container-button-text-color-focus: #ffffff;
+  --tp-container-button-text-color-hover: #e8ecf4;
+  --tp-label-text-color: #8899bb;
+  --tp-label-text-color-active: #aabbdd;
+  --tp-label-text-color-focus: #aabbdd;
+  --tp-label-text-color-hover: #99aacc;
+  --tp-monospace-font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --tp-input-border-radius: 4px;
+  --tp-blade-border-radius: 6px;
+  --tp-blade-border-color: #2a305033;
+}
+
+/* hidden 状态：完全消失，不占位，不闪烁 */
+.tp-dfwv.tp-hidden {
+  display: none !important;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+/* 按钮悬停时发光 */
+.tp-dfwv .tp-btnv:hover {
+  box-shadow: 0 0 12px #4a6cf780;
+}
+
+/* 滑块轨道 */
+.tp-dfwv .tp-sliderv {
+  background: linear-gradient(to right, #2a3050, #4a6cf7);
+}
+
+/* 选择器高亮 */
+.tp-dfwv .tp-optv.tp-active {
+  background: #4a6cf7 !important;
+  color: white !important;
+}
