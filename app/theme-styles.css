@@ -1,0 +1,599 @@
+/* 主题变量定义 */
+:root {
+  /* 深色主题变量 - 增强对比度和层次感 */
+  --deep-space-blue: #0f1b2e;
+  --gradient-gray-start: #1a2332;
+  --gradient-gray-end: #0d1421;
+  --neon-ice-blue: #7dd3fc;
+  --neon-pink-purple: #e879f9;
+  --neon-orange-yellow: #fbbf24;
+  --neon-grass-green: #86efac;
+  --success-green: #6ee7b7;
+  --warning-yellow: #fde68a;
+  --danger-red: #f87171;
+
+  /* 通用变量 */
+  --text-primary: #ffffff;
+  --text-secondary: #d0d8e8;
+  --text-muted: #8899aa;
+  --border-primary: rgba(180, 240, 255, 0.5);
+  --border-secondary: rgba(180, 240, 255, 0.2);
+  --glass-bg: rgba(8, 18, 36, 0.88);
+  --glass-border: rgba(180, 240, 255, 0.35);
+  --panel-bg: rgba(8, 16, 32, 0.92);
+  --panel-header-bg:
+    linear-gradient(90deg, rgba(125, 211, 252, 0.16), rgba(125, 211, 252, 0.06), rgba(125, 211, 252, 0.16)),
+    linear-gradient(90deg, rgba(15, 27, 46, 0.94), rgba(10, 20, 40, 0.92), rgba(15, 27, 46, 0.94));
+}
+
+/* 浅色主题变量 - 增强对比度和层次感 */
+[data-theme="light"] {
+  /* 主背景：深蓝渐变，提供更好的层次感 */
+  --deep-space-blue: #1e3a8a;
+  --gradient-gray-start: #3b82f6;
+  --gradient-gray-end: #1e40af;
+
+  /* 核心色彩：增强对比度的蓝色系 */
+  --neon-ice-blue: #0284c7;
+  --neon-pink-purple: #a855f7;
+  --neon-orange-yellow: #ea580c;
+  --neon-grass-green: #16a34a;
+  --success-green: #059669;
+  --warning-yellow: #d97706;
+  --danger-red: #dc2626;
+
+  /* 文字层次：增强对比度 */
+  --text-primary: #ffffff;
+  --text-secondary: #e2e8f0;
+  --text-muted: #cbd5e1;
+
+  /* 边框与分割线：增强可见性 */
+  --border-primary: rgba(2, 132, 199, 0.6);
+  --border-secondary: rgba(2, 132, 199, 0.4);
+
+  /* 玻璃面板：深色毛玻璃效果 */
+  --glass-bg: rgba(30, 58, 138, 0.85);
+  --glass-border: rgba(2, 132, 199, 0.4);
+
+  /* 面板背景：深蓝调 */
+  --panel-bg: rgba(30, 58, 138, 0.9);
+  --panel-header-bg:
+    linear-gradient(90deg, rgba(2, 132, 199, 0.2), rgba(2, 132, 199, 0.08), rgba(2, 132, 199, 0.2)),
+    linear-gradient(90deg, rgba(30, 58, 138, 0.94), rgba(30, 64, 175, 0.9), rgba(30, 58, 138, 0.94));
+
+  /* 3D场景专用色彩 - 深蓝调 */
+  --arena-star-color: rgba(2, 132, 199, 0.8);
+  --arena-bg-primary: #1e3a8a;
+  --arena-bg-secondary: #1e40af;
+
+  /* 题目类别优化色彩 - 增强对比度 */
+  --category-web: #0284c7;
+  --category-crypto: #a855f7;
+  --category-reverse: #ea580c;
+  --category-misc: #16a34a;
+  --category-pwn: #dc2626;
+  --category-forensics: #7c3aed;
+  --category-blockchain: #dc2626;
+  --category-hardware: #059669;
+  --category-mobile: #0284c7;
+  --category-ppc: #d97706;
+  --category-ai: #a855f7;
+  --category-pentest: #dc2626;
+  --category-osint: #0284c7;
+
+  /* TOP3排名优化色彩 - 增强对比度 */
+  --rank-gold: #fbbf24;
+  --rank-silver: #e5e7eb;
+  --rank-bronze: #d97706;
+
+  /* 状态指示色彩 - 增强对比度 */
+  --status-success: #059669;
+  --status-attack: #dc2626;
+  --status-info: #6b7280;
+}
+
+/* 主题切换过渡动画 */
+.theme-loading {
+  transition: all 0.3s ease-in-out;
+}
+
+/* 深色主题样式 */
+.theme-dark {
+  color-scheme: dark;
+}
+
+.theme-dark .deep-space-bg {
+  background: radial-gradient(ellipse at top, rgba(26, 42, 58, 0.4), transparent),
+    radial-gradient(ellipse at bottom, rgba(15, 23, 34, 0.6), transparent),
+    linear-gradient(180deg, var(--deep-space-blue) 0%, var(--gradient-gray-start) 30%, var(--gradient-gray-end) 100%);
+}
+
+.theme-dark .deep-space-bg::before {
+  background-image: radial-gradient(circle at 20% 20%, rgba(103, 232, 249, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(216, 180, 254, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 40% 60%, rgba(250, 204, 21, 0.06) 0%, transparent 50%);
+}
+
+/* 浅色主题样式 - 深蓝渐变效果 */
+.theme-light {
+  color-scheme: light;
+}
+
+.theme-light .deep-space-bg {
+  background: radial-gradient(ellipse at top, rgba(30, 58, 138, 0.9), rgba(59, 130, 246, 0.7)),
+    radial-gradient(ellipse at bottom, rgba(30, 64, 175, 0.6), transparent),
+    linear-gradient(180deg, var(--arena-bg-primary) 0%, var(--gradient-gray-start) 50%, var(--arena-bg-secondary) 100%);
+}
+
+.theme-light .deep-space-bg::before {
+  background-image: radial-gradient(circle at 20% 20%, rgba(2, 132, 199, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(2, 132, 199, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 40% 60%, rgba(2, 132, 199, 0.1) 0%, transparent 50%);
+}
+
+/* 玻璃面板主题适配 */
+.glass-panel {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px);
+  transition: all 0.3s ease-in-out;
+}
+
+/* 浅色模式玻璃面板增强 */
+.theme-light .glass-panel {
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.theme-light .glass-panel:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.glass-panel-header {
+  background: var(--panel-header-bg);
+  border-bottom: 1px solid var(--border-primary);
+  color: var(--neon-ice-blue);
+  transition: all 0.3s ease-in-out;
+}
+
+/* 霓虹文字主题适配 */
+.neon-tube-text {
+  color: var(--text-primary);
+  transition: all 0.3s ease-in-out;
+}
+
+.theme-dark .neon-tube-text {
+  text-shadow: 0 0 8px rgba(34, 211, 238, 0.9), 0 0 16px rgba(59, 130, 246, 0.7), 0 0 24px rgba(14, 165, 233, 0.5);
+}
+
+.theme-light .neon-tube-text {
+  text-shadow: 0 0 6px rgba(2, 132, 199, 0.9), 0 0 12px rgba(2, 132, 199, 0.6), 0 0 18px rgba(2, 132, 199, 0.4);
+  font-weight: 700;
+}
+
+/* 数字计数器主题适配 */
+.digital-counter {
+  color: var(--neon-ice-blue);
+  text-shadow: 0 0 10px currentColor;
+  transition: all 0.3s ease-in-out;
+}
+
+.theme-light .digital-counter {
+  text-shadow: 0 0 8px currentColor, 0 0 4px rgba(2, 132, 199, 0.5);
+  font-weight: 600;
+}
+
+/* 霓虹边框主题适配 */
+.neon-border {
+  border-color: var(--border-primary);
+  transition: all 0.3s ease-in-out;
+}
+
+.theme-dark .neon-border {
+  box-shadow: 0 0 8px rgba(103, 232, 249, 0.3);
+}
+
+.theme-light .neon-border {
+  box-shadow: 0 0 8px rgba(2, 132, 199, 0.5), 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* 金属按钮主题适配 */
+.metal-button {
+  transition: all 0.3s ease-in-out;
+}
+
+.theme-dark .metal-button {
+  background: linear-gradient(145deg, #2a3441, #1a2332);
+  border: 1px solid rgba(103, 232, 249, 0.3);
+  color: var(--neon-ice-blue);
+}
+
+.theme-light .metal-button {
+  background: linear-gradient(145deg, rgba(30, 58, 138, 0.9), rgba(30, 64, 175, 0.8));
+  border: 1px solid var(--border-primary);
+  color: var(--neon-ice-blue);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.theme-light .metal-button:hover {
+  background: linear-gradient(145deg, rgba(30, 58, 138, 1), rgba(30, 64, 175, 0.9));
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+  transform: translateY(-1px);
+}
+
+/* 主题切换按钮特殊样式 */
+.theme-toggle-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-toggle-button::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.theme-toggle-button:hover::after {
+  left: 100%;
+}
+
+/* 文本颜色主题适配 */
+.text-primary {
+  color: var(--text-primary);
+  transition: color 0.3s ease-in-out;
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+  transition: color 0.3s ease-in-out;
+}
+
+.text-muted {
+  color: var(--text-muted);
+  transition: color 0.3s ease-in-out;
+}
+
+/* 浅色主题特殊调整 */
+.theme-light .cyber-panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 排名卡片浅色模式优化 */
+.theme-light .ranking-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.theme-light .ranking-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-color: var(--neon-ice-blue);
+}
+
+/* TOP3 排名颜色优化 */
+.theme-light .rank-gold {
+  color: var(--rank-gold) !important;
+  background-color: rgba(255, 224, 130, 0.2) !important;
+  border-color: rgba(255, 224, 130, 0.5) !important;
+}
+
+.theme-light .rank-silver {
+  color: var(--rank-silver) !important;
+  background-color: rgba(224, 224, 224, 0.2) !important;
+  border-color: rgba(224, 224, 224, 0.5) !important;
+}
+
+.theme-light .rank-bronze {
+  color: var(--rank-bronze) !important;
+  background-color: rgba(233, 196, 106, 0.2) !important;
+  border-color: rgba(233, 196, 106, 0.5) !important;
+}
+
+/* 事件状态颜色优化 */
+.theme-light .status-success {
+  color: var(--status-success) !important;
+}
+
+.theme-light .status-attack {
+  color: var(--status-attack) !important;
+}
+
+.theme-light .status-info {
+  color: var(--status-info) !important;
+}
+
+/* 主题切换时的全局过渡 - 优化流畅度 */
+* {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow, text-shadow;
+  transition-duration: 0.2s; /* 减少过渡时间，提高响应速度 */
+  transition-timing-function: ease-out; /* 使用更快的缓动函数 */
+}
+
+/* 避免某些元素的过渡 */
+canvas,
+video,
+iframe,
+img {
+  transition: none !important;
+}
+
+/* 浅色模式下的动画优化 */
+.theme-light .animate-pulse {
+  animation: light-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes light-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 8px rgba(0, 188, 212, 0.3);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 16px rgba(0, 188, 212, 0.5);
+  }
+}
+
+/* 浅色模式下的发光效果 */
+.theme-light .glow-effect {
+  box-shadow: 0 0 12px rgba(0, 188, 212, 0.4), 0 0 24px rgba(0, 188, 212, 0.2);
+}
+
+/* 浅色模式下的悬浮效果 */
+.theme-light .hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* 浅色模式下的渐变背景 */
+.theme-light .gradient-bg {
+  background: linear-gradient(
+    135deg,
+    rgba(224, 247, 250, 0.8) 0%,
+    rgba(245, 247, 250, 0.6) 50%,
+    rgba(179, 229, 252, 0.4) 100%
+  );
+}
+
+/* 响应式布局优化 - 3D界面自适应 */
+@media (max-width: 768px) {
+  .main-layout {
+    gap: 0.25rem;
+    padding: 0.25rem;
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100vh - 80px);
+  }
+  
+  .sidebar-panel {
+    width: 100%;
+    margin-bottom: 0.5rem;
+    height: auto;
+    min-height: 300px;
+  }
+  
+  .center-panel {
+    height: 400px;
+    min-height: 400px;
+    order: -1; /* 3D界面在移动端优先显示 */
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .main-layout {
+    gap: 0.5rem;
+    padding: 0.5rem;
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100vh - 80px);
+  }
+  
+  .sidebar-panel {
+    width: 100%;
+    margin-bottom: 0.5rem;
+    height: auto;
+    min-height: 250px;
+  }
+  
+  .center-panel {
+    height: 500px;
+    min-height: 500px;
+    order: -1; /* 3D界面在平板端优先显示 */
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1280px) {
+  .main-layout {
+    gap: 0.75rem;
+    padding: 0.75rem;
+    flex-direction: row;
+  }
+  
+  .sidebar-panel {
+    flex-shrink: 0;
+    width: 18%; /* 比原来的20%更窄 */
+  }
+  
+  .center-panel {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (min-width: 1281px) {
+  .main-layout {
+    gap: 1rem;
+    padding: 1rem;
+    flex-direction: row;
+  }
+  
+  .sidebar-panel {
+    flex-shrink: 0;
+    width: 16%; /* 比原来的20%更窄，给3D界面更多空间 */
+  }
+  
+  .center-panel {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (min-width: 1920px) {
+  .sidebar-panel {
+    width: 14%; /* 大屏幕下进一步减少侧边栏宽度 */
+  }
+}
+
+/* 确保面板内容能够充分利用空间 */
+.sidebar-content {
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-primary) transparent;
+}
+
+.sidebar-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 2px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-ice-blue);
+}
+
+/* 面板高度优化 */
+.glass-panel {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.glass-panel-header {
+  flex-shrink: 0;
+}
+
+/* 确保内容区域能够滚动 */
+.overflow-auto {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* 侧边栏内容优化 - 适应更窄的宽度 */
+@media (min-width: 1025px) {
+  .sidebar-panel .glass-panel-header {
+    padding: 0.5rem 0.75rem; /* 减少头部padding */
+    font-size: 0.875rem; /* 稍微减小字体 */
+  }
+  
+  .sidebar-panel .sidebar-content {
+    padding: 0.5rem 0.75rem; /* 减少内容padding */
+  }
+  
+  /* 排名卡片在小宽度下的优化 */
+  .ranking-card {
+    padding: 0.5rem; /* 减少卡片内边距 */
+  }
+  
+  .ranking-card .team-name {
+    font-size: 0.8rem; /* 稍微减小团队名称字体 */
+    line-height: 1.2;
+  }
+  
+  .ranking-card .score-info {
+    font-size: 0.75rem; /* 稍微减小分数信息字体 */
+  }
+  
+  /* 事件卡片在小宽度下的优化 */
+  .event-item {
+    padding: 0.5rem; /* 减少事件项内边距 */
+  }
+  
+  .event-item .event-time {
+    font-size: 0.7rem; /* 稍微减小时间字体 */
+  }
+  
+  .event-item .event-team {
+    font-size: 0.8rem; /* 稍微减小团队名称字体 */
+  }
+  
+  .event-item .event-status {
+    font-size: 0.75rem; /* 稍微减小状态字体 */
+  }
+}
+
+/* 超宽屏幕下的进一步优化 */
+@media (min-width: 1920px) {
+  .sidebar-panel .glass-panel-header {
+    padding: 0.75rem 1rem; /* 大屏幕下恢复更多padding */
+    font-size: 0.9rem;
+  }
+  
+  .sidebar-panel .sidebar-content {
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* 3D场景容器优化 */
+.center-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.center-panel canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 3D场景在不同屏幕下的优化 */
+@media (max-width: 768px) {
+  .center-panel {
+    aspect-ratio: 16/9; /* 移动端保持合适的宽高比 */
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .center-panel {
+    aspect-ratio: 4/3; /* 平板端适中的宽高比 */
+  }
+}
+
+@media (min-width: 1025px) {
+  .center-panel {
+    aspect-ratio: auto; /* 桌面端自适应 */
+  }
+}
+
+/* 确保3D场景内容居中显示 */
+.cyber-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.cyber-panel .cyber-panel-header {
+  flex-shrink: 0;
+  z-index: 20;
+  position: relative;
+}
+
+.cyber-panel > div:last-child {
+  flex: 1;
+  min-height: 0;
+}
