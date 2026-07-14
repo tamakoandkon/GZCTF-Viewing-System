@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Rocket } from "lucide-react"
-import gsap from "gsap"
 import type { GameEvent } from "@/types/events"
 import type { TeamInfo } from "@/types/scoreboard"
 import type { GameDetails } from "@/types/challenge"
@@ -271,55 +270,6 @@ export function InteractiveArena({ events, teams, gameDetails, allTeams }: Inter
       window.removeEventListener("test:promotion", onTestPromotion)
     }
   }, [allTeams, teams])
-
-  // 监听队伍聚焦事件 - 镜头平滑跟随该队伍飞船
-  useEffect(() => {
-    const onFocusTeam = (e: Event) => {
-      const teamId = (e as CustomEvent).detail?.teamId
-      if (!teamId || !globeControllerRef.current) return
-
-      const spaceshipManager = globeControllerRef.current.getSpaceshipManager()
-      const camera = globeControllerRef.current.getCamera()
-      const controls = globeControllerRef.current.getControls()
-      const autoSystem = globeControllerRef.current.getAutoShowcaseSystem?.()
-
-      if (!spaceshipManager || !camera || !controls) return
-
-      const spaceship = spaceshipManager.spaceships.get(teamId)
-      if (!spaceship) return
-
-      // 暂停自动展示 20 秒，避免运镜冲突
-      autoSystem?.suppressAuto?.(20000)
-
-      // 飞船当前位置（SpaceshipManager 在原点，position 即世界坐标）
-      const tx = spaceship.position.x
-      const ty = spaceship.position.y
-      const tz = spaceship.position.z
-
-      // 相机偏移：沿地心→飞船方向向外退 60 单位，并稍微抬高 20 单位
-      const dist = Math.sqrt(tx * tx + ty * ty + tz * tz) || 1
-      const offsetDist = 60
-      const cx = tx + (tx / dist) * offsetDist
-      const cy = ty + (ty / dist) * offsetDist + 20
-      const cz = tz + (tz / dist) * offsetDist
-
-      // gsap 平滑过渡相机位置和注视目标
-      gsap.timeline()
-        .to(
-          camera.position,
-          { x: cx, y: cy, z: cz, duration: 1.8, ease: "power2.inOut" },
-          0,
-        )
-        .to(
-          controls.target,
-          { x: tx, y: ty, z: tz, duration: 1.8, ease: "power2.inOut" },
-          0,
-        )
-    }
-
-    window.addEventListener("team:focus", onFocusTeam as EventListener)
-    return () => window.removeEventListener("team:focus", onFocusTeam as EventListener)
-  }, [])
 
   if (!teams || teams.length === 0) {
     return (

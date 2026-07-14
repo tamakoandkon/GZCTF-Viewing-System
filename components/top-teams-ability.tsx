@@ -24,15 +24,12 @@ export function TopTeamsAbility({ scoreboard }: TopTeamsAbilityProps) {
   const [isTransitioning, setIsTransitioning] = useState(false)
 
   const topTeams = useMemo(() => {
-    const items = scoreboard?.items
-    if (!items || !Array.isArray(items)) return []
-    return [...items].sort((a, b) => a.rank - b.rank).slice(0, 5)
-  }, [scoreboard?.items, scoreboard])
+    return [...scoreboard.items].sort((a, b) => a.rank - b.rank).slice(0, 5)
+  }, [scoreboard.items])
 
-  // 构建挑战ID到类别的映射
+  // 構建挑戰ID到類別的映射
   const challengeIdToCategory = useMemo(() => {
     const map = new Map<number, ChallengeCategory>()
-    if (!scoreboard?.challenges) return map
     Object.entries(scoreboard.challenges).forEach(([category, challenges]) => {
       challenges.forEach((challenge) => {
         map.set(challenge.id, category as ChallengeCategory)
@@ -41,18 +38,16 @@ export function TopTeamsAbility({ scoreboard }: TopTeamsAbilityProps) {
     return map
   }, [scoreboard.challenges])
 
-  // 计算当前展示队伍的数据
+  // 計算當前展示隊伍的數據
   const currentTeamData = useMemo(() => {
     if (topTeams.length === 0) return null
     const team = topTeams[currentIndex]
 
     const stats: Record<string, { solved: number; total: number }> = {}
     
-    if (scoreboard?.challenges) {
-      Object.entries(scoreboard.challenges).forEach(([category, challenges]) => {
-        stats[category] = { solved: 0, total: challenges.length }
-      })
-    }
+    Object.entries(scoreboard.challenges).forEach(([category, challenges]) => {
+      stats[category] = { solved: 0, total: challenges.length }
+    })
 
     team.solvedChallenges.forEach((solved) => {
       const category = challengeIdToCategory.get(solved.id)
@@ -74,7 +69,7 @@ export function TopTeamsAbility({ scoreboard }: TopTeamsAbilityProps) {
           total,
         }
       })
-      .filter(item => item.total > 0) // 只显示有题目的类别
+      .filter(item => item.total > 0) // 只顯示有題目的類別
   }, [topTeams, currentIndex, scoreboard.challenges, challengeIdToCategory])
 
   useEffect(() => {
@@ -86,15 +81,10 @@ export function TopTeamsAbility({ scoreboard }: TopTeamsAbilityProps) {
 
     const interval = setInterval(() => {
       setIsTransitioning(true)
-      // 先换数据（在 opacity-0 时渲染），下一帧再恢复可见，避免 ResponsiveContainer 重测布局时抖动
       setTimeout(() => {
         setCurrentIndex((prev) => (prev + 1) % topTeams.length)
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            setIsTransitioning(false)
-          })
-        })
-      }, 400)
+        setIsTransitioning(false)
+      }, 500)
     }, 15000)
 
     return () => clearInterval(interval)
