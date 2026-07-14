@@ -8,7 +8,7 @@ export async function getScoreboard(gameId: string): Promise<ScoreboardResponse>
   return authenticatedFetch(`/api/game/${gameId}/scoreboard`).then(r => r.json())
 }
 export async function getEvents(gameId: string): Promise<EventsResponse> {
-  return authenticatedFetch(`/api/game/${gameId}/events?hideContainer=true&count=100&skip=0`).then(r => r.json())
+  return authenticatedFetch(`/api/game/${gameId}/events?hideContainer=true&count=100&skip=0`).then(r => r.json()).then(data => Array.isArray(data) ? data : (data?.data ?? data?.items ?? []))
 }
 export async function getGameDetail(gameId: string): Promise<GameDetail> {
   return authenticatedFetch(`/api/game/${gameId}`).then(r => r.json())
