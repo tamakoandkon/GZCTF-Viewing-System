@@ -85,22 +85,25 @@ const categoryCountryMapping: Record<ChallengeCategory, CategoryMapping> = {
   'Misc': { country: 'Mongolia', color: '#ff7675', highlightIntensity: 0.6 }, // Mongolia (75顶点)
 }
 
-// 从游戏数据中获取实际存在的category
-export function getActiveCategoriesFromGame(gameDetails: GameDetails): ChallengeCategory[] {
-  return Object.keys(gameDetails.challenges) as ChallengeCategory[]
+// 从游戏数据中获取实际存在的category（兼容旧接口，回退到内建映射）
+export function getActiveCategoriesFromGame(gameDetails?: GameDetails): ChallengeCategory[] {
+  if (gameDetails?.challenges) {
+    return Object.keys(gameDetails.challenges) as ChallengeCategory[]
+  }
+  return Object.keys(categoryCountryMapping) as ChallengeCategory[]
 }
 
 // 获取游戏中的category到国家的映射
-export function getGameCategoryMappings(gameDetails: GameDetails): Record<ChallengeCategory, CategoryMapping> {
+export function getGameCategoryMappings(gameDetails?: GameDetails): Record<ChallengeCategory, CategoryMapping> {
   const activeCategories = getActiveCategoriesFromGame(gameDetails)
   const mappings: Record<ChallengeCategory, CategoryMapping> = {} as any
-  
+
   activeCategories.forEach(category => {
     if (categoryCountryMapping[category]) {
       mappings[category] = categoryCountryMapping[category]
     }
   })
-  
+
   return mappings
 }
 

@@ -6,6 +6,9 @@ import { ParticleSystem } from './ParticleSystem'
  * 在地球显示时，用粒子 + 光晕创造一个"展开"的视觉效果
  */
 export class CeremonySystem {
+  private camera: THREE.Camera
+  private controls: any
+  private spaceshipManager: any
   private group = new THREE.Group()
   private particles: ParticleSystem
   private glowMesh: THREE.Mesh
@@ -13,7 +16,15 @@ export class CeremonySystem {
   private progress = 0
   private isActive = false
 
-  constructor(private scene: THREE.Scene) {
+  constructor(
+    private scene: THREE.Scene,
+    camera: THREE.Camera,
+    controls: any,
+    spaceshipManager: any
+  ) {
+    this.camera = camera
+    this.controls = controls
+    this.spaceshipManager = spaceshipManager
     this.particles = new ParticleSystem({
       count: 3000,
       radius: 12,
@@ -80,3 +91,5 @@ export class CeremonySystem {
     this.scene.remove(this.group)
   }
 }
+
+export default CeremonySystem

@@ -18,7 +18,7 @@ export function SettingsPanel({ onToggleGUI, isGUIVisible = false }: SettingsPan
     setIsAnimating(true)
     toggleTheme()
 
-    // 動畫完成後重置狀態
+    // 动画完成后重置状态
     setTimeout(() => {
       setIsAnimating(false)
     }, 600)
@@ -26,13 +26,13 @@ export function SettingsPanel({ onToggleGUI, isGUIVisible = false }: SettingsPan
 
   const handleGUIToggle = () => {
     onToggleGUI?.()
-    // 觸發全局GUI切換事件
+    // 触发全局GUI切换事件
     window.dispatchEvent(new CustomEvent('toggleGUI'))
   }
 
   return (
     <div className="relative">
-      {/* 主設置按鈕 */}
+      {/* 主设置按钮 */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className={`
@@ -49,8 +49,8 @@ export function SettingsPanel({ onToggleGUI, isGUIVisible = false }: SettingsPan
           backdrop-blur-sm
           shadow-[0_0_12px_rgba(34,211,238,0.4),inset_0_0_8px_rgba(34,211,238,0.3)]
         `}
-        title="設置面板"
-        aria-label="設置面板"
+        title="设置面板"
+        aria-label="设置面板"
       >
         <Settings 
           className={`w-6 h-6 transition-all duration-300 ${
@@ -58,7 +58,7 @@ export function SettingsPanel({ onToggleGUI, isGUIVisible = false }: SettingsPan
           }`} 
         />
         
-        {/* 背景裝飾效果 */}
+        {/* 背景装饰效果 */}
         <div
           className={`
             absolute inset-0 rounded-xl opacity-20
@@ -71,7 +71,7 @@ export function SettingsPanel({ onToggleGUI, isGUIVisible = false }: SettingsPan
           `}
         />
 
-        {/* 能量脈衝效果 */}
+        {/* 能量脉冲效果 */}
         {isAnimating && (
           <div
             className={`
@@ -82,7 +82,7 @@ export function SettingsPanel({ onToggleGUI, isGUIVisible = false }: SettingsPan
         )}
       </button>
 
-      {/* 展開的設置菜單 */}
+      {/* 展开的设置菜单 */}
       {isExpanded && (
         <div className={`
           absolute top-14 right-0 z-50
@@ -91,11 +91,11 @@ export function SettingsPanel({ onToggleGUI, isGUIVisible = false }: SettingsPan
           transition-all duration-300 ease-in-out
           ${isDark ? "bg-slate-900/95" : "bg-blue-50/95"}
         `}>
-          {/* 主題切換 */}
+          {/* 主题切换 */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Palette className={`w-4 h-4 ${isDark ? "text-cyan-400" : "text-blue-600"}`} />
-              <span className="text-sm font-medium text-primary">主題模式</span>
+              <span className="text-sm font-medium text-primary">主题模式</span>
             </div>
             <button
               onClick={handleThemeToggle}
@@ -134,7 +134,7 @@ export function SettingsPanel({ onToggleGUI, isGUIVisible = false }: SettingsPan
             </button>
           </div>
 
-          {/* GUI面板切換 */}
+          {/* GUI面板切换 */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Globe className={`w-4 h-4 ${isDark ? "text-cyan-400" : "text-blue-600"}`} />
@@ -179,19 +179,19 @@ export function SettingsPanel({ onToggleGUI, isGUIVisible = false }: SettingsPan
             </button>
           </div>
 
-          {/* 測試工具 */}
+          {/* 测试工具 */}
           <div className="border-t border-border-primary/30 pt-2 mt-2 space-y-1.5">
             <div className="text-xs text-muted flex items-center gap-1.5">
-              <FlaskConical className="w-3 h-3 text-yellow-400" />測試工具
+              <FlaskConical className="w-3 h-3 text-yellow-400" />测试工具
             </div>
-            <button onClick={() => { console.log('Dispatching test:attack'); window.dispatchEvent(new CustomEvent("test:attack")) }} className="w-full px-2 py-1 text-xs bg-cyan-500/15 border border-cyan-500/40 rounded text-cyan-400 hover:bg-cyan-500/25 transition-colors">射線攻擊測試</button>
-            <button onClick={() => window.dispatchEvent(new CustomEvent("test:promotion"))} className="w-full px-2 py-1 text-xs bg-cyan-500/15 border border-cyan-500/40 rounded text-cyan-400 hover:bg-cyan-500/25 transition-colors flex items-center justify-center gap-1"><ArrowUpDown className="w-3 h-3" />晉升動畫(第2→1名)</button>
-            <button onClick={() => window.dispatchEvent(new CustomEvent("game:ended"))} className="w-full px-2 py-1 text-xs bg-red-500/15 border border-red-500/40 rounded text-red-400 hover:bg-red-500/25 transition-colors flex items-center justify-center gap-1"><PartyPopper className="w-3 h-3" />比賽結束儀式</button>
+            <button onClick={() => { console.log('Dispatching test:attack'); window.dispatchEvent(new CustomEvent("test:attack")) }} className="w-full px-2 py-1 text-xs bg-cyan-500/15 border border-cyan-500/40 rounded text-cyan-400 hover:bg-cyan-500/25 transition-colors">射线攻击测试</button>
+            <button onClick={() => window.dispatchEvent(new CustomEvent("test:promotion"))} className="w-full px-2 py-1 text-xs bg-cyan-500/15 border border-cyan-500/40 rounded text-cyan-400 hover:bg-cyan-500/25 transition-colors flex items-center justify-center gap-1"><ArrowUpDown className="w-3 h-3" />晋升动画(第2→1名)</button>
+            <button onClick={() => window.dispatchEvent(new CustomEvent("game:ended"))} className="w-full px-2 py-1 text-xs bg-red-500/15 border border-red-500/40 rounded text-red-400 hover:bg-red-500/25 transition-colors flex items-center justify-center gap-1"><PartyPopper className="w-3 h-3" />比赛结束仪式</button>
           </div>
         </div>
       )}
 
-      {/* 點擊外部關閉菜單 */}
+      {/* 点击外部关闭菜单 */}
       {isExpanded && (
         <div
           className="fixed inset-0 z-40"
