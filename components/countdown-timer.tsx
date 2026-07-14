@@ -22,7 +22,7 @@ export function CountdownTimer({ endTimeUtc, startTimeUtc, title }: CountdownTim
     progress: 0,
   })
 
-  // ✅ 修复：初始化为0，避免hydration错误
+  // ✅ 修復：初始化為0，避免hydration錯誤
   const [currentTime, setCurrentTime] = useState<number>(0)
   const [isClient, setIsClient] = useState(false)
 
@@ -95,7 +95,7 @@ export function CountdownTimer({ endTimeUtc, startTimeUtc, title }: CountdownTim
   }
 
   useEffect(() => {
-    // ✅ 修复：只在客户端设置时间
+    // ✅ 修復：只在客戶端設置時間
     setIsClient(true)
     initialMountTime.current = Date.now()
     setCurrentTime(Date.now())
@@ -151,10 +151,10 @@ export function CountdownTimer({ endTimeUtc, startTimeUtc, title }: CountdownTim
 
       <div className="flex-1 min-w-0">
         {timeLeft.isEnded ? (
-          <span className="text-red-400 font-bold text-sm">比赛已结束</span>
+          <span className="text-red-400 font-bold text-sm">比賽已結束</span>
         ) : timeLeft.isStarted ? (
           <div className="flex flex-col">
-            <span className="text-muted text-xs mb-0.5">剩余时间</span>
+            <span className="text-muted text-xs mb-0.5">剩餘時間</span>
             <div className="flex items-center gap-0.5 text-sm whitespace-nowrap">
               {timeLeft.days > 0 && (
                 <>
@@ -179,7 +179,7 @@ export function CountdownTimer({ endTimeUtc, startTimeUtc, title }: CountdownTim
           </div>
         ) : (
           <div className="flex flex-col">
-            <span className="text-muted text-xs mb-0.5">开始倒计时</span>
+            <span className="text-muted text-xs mb-0.5">開始倒計時</span>
             <div className="flex items-center gap-0.5 text-sm whitespace-nowrap">
               {timeLeft.days > 0 && (
                 <>
@@ -203,7 +203,7 @@ export function CountdownTimer({ endTimeUtc, startTimeUtc, title }: CountdownTim
             </div>
           </div>
         )}
-        {/* ✅ 修复：只在客户端显示时间 */}
+        {/* ✅ 修復：只在客戶端顯示時間 */}
         {isClient && (
           <div className="text-xs text-muted mt-1 text-right">{formatTime(currentTime)}</div>
         )}
