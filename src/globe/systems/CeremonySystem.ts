@@ -66,8 +66,8 @@ export class CeremonySystem {
 
     // 光晕出现并消失
     const glowOpacity = Math.sin(ease * Math.PI) * 0.4
-    this.glowMesh.material.opacity = glowOpacity
-    this.ring.material.opacity = ease * 0.3
+    ;(this.glowMesh.material as THREE.MeshBasicMaterial).opacity = glowOpacity
+    ;(this.ring.material as THREE.MeshBasicMaterial).opacity = ease * 0.3
     this.ring.scale.setScalar(1 + ease * 0.5)
 
     if (this.progress >= 1) {

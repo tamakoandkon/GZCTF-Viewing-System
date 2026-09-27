@@ -47,6 +47,10 @@ export interface TeamInfo {
   lastSubmissionTime: number
   solvedChallenges: SolvedChallenge[]
   solvedCount: number
+  /** 队伍所属组织（可选，GZCTF 未提供时为空） */
+  organization?: string | null
+  /** 队员名单（可选，GZCTF 未提供时为空） */
+  members?: string[]
 }
 
 export interface BloodInfo {

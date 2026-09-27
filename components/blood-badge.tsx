@@ -1,6 +1,6 @@
 "use client"
 
-import { Drop } from "lucide-react"
+import { Droplet } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { BloodType } from "@/types/scoreboard"
 import { BLOOD_COLORS } from "@/lib/category-colors"
@@ -43,7 +43,7 @@ export function BloodBadge({ type, className, showLabel = true }: BloodBadgeProp
         border: `1px solid ${color}66`,
       }}
     >
-      <Drop className="w-2.5 h-2.5" style={{ fill: color }} />
+      <Droplet className="w-2.5 h-2.5" style={{ fill: color }} />
       {showLabel && BLOOD_LABELS[type]}
     </span>
   )

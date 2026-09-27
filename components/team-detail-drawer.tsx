@@ -24,7 +24,7 @@ import {
   Trophy,
   Target,
   Clock,
-  Drop,
+  Droplet,
   Users,
   Medal,
 } from "lucide-react"
@@ -168,7 +168,7 @@ export function TeamDetailDrawer({
                   border: `1px solid ${BLOOD_COLORS.FirstBlood}66`,
                 }}
               >
-                <Drop className="w-3 h-3" style={{ fill: BLOOD_COLORS.FirstBlood }} />
+                <Droplet className="w-3 h-3" style={{ fill: BLOOD_COLORS.FirstBlood }} />
                 一血 × {bloodStats.first}
               </span>
             )}
@@ -181,7 +181,7 @@ export function TeamDetailDrawer({
                   border: `1px solid ${BLOOD_COLORS.SecondBlood}66`,
                 }}
               >
-                <Drop className="w-3 h-3" style={{ fill: BLOOD_COLORS.SecondBlood }} />
+                <Droplet className="w-3 h-3" style={{ fill: BLOOD_COLORS.SecondBlood }} />
                 二血 × {bloodStats.second}
               </span>
             )}
@@ -194,7 +194,7 @@ export function TeamDetailDrawer({
                   border: `1px solid ${BLOOD_COLORS.ThirdBlood}66`,
                 }}
               >
-                <Drop className="w-3 h-3" style={{ fill: BLOOD_COLORS.ThirdBlood }} />
+                <Droplet className="w-3 h-3" style={{ fill: BLOOD_COLORS.ThirdBlood }} />
                 三血 × {bloodStats.third}
               </span>
             )}

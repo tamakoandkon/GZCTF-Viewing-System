@@ -60,8 +60,9 @@ export function EventsFeed({ events, onEventClick }: EventsFeedProps) {
     }
   }
 
-  // 始終顯示所有事件，不限制數量
-  const sortedEvents = [...events].sort((a, b) => b.time - a.time)
+  // 始终显示所有事件，不限制数量
+  const safeEvents = Array.isArray(events) ? events : []
+  const sortedEvents = [...safeEvents].sort((a, b) => b.time - a.time)
   const visibleEvents = sortedEvents.slice(0, 15)
 
   // 計算最近5分鐘的事件活躍度
