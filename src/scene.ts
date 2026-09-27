@@ -16,6 +16,7 @@ import AutoShowcaseSystem from './globe/AutoShowcaseSystem';
 import PerfRecorder from './system/perf-recorder';
 import LightOrbSystem from "./globe/systems/LightOrbSystem"
 import CeremonySystem from "./globe/systems/CeremonySystem"
+import CosmicBackgroundSystem from './globe/systems/CosmicBackgroundSystem'
 import gsap from 'gsap';
 
 // 项目级 GSAP 默认值 + reduced-motion 支持
@@ -48,6 +49,7 @@ function initScene() {
         const { isDark, colors } = event.detail;
         sceneParameters.bgColor = colors.background;
         scene.background = new THREE.Color(sceneParameters.bgColor);
+        cosmicBackground?.setTheme(colors, isDark);
         console.log('Theme changed:', isDark ? 'dark' : 'light', 'Background:', colors.background);
     };
     
@@ -88,7 +90,7 @@ function initScene() {
     })
 
     let renderCamera = null;
-    const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 2000); // 增加FOV和远裁剪面
+    const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 3000); // far 3000：星云穹顶 r=1400 + 相机 maxDistance 1200 = 远侧面 2600，原值 2000 会裁剪出硬边
     camera.position.set(0, 0, 8); // 稍微拉远一点
     renderCamera = camera;
 
@@ -98,11 +100,21 @@ function initScene() {
     controls.maxDistance = 1200; // 增加最大距离
     controls.minDistance = 20; // 设置最小距离，确保能看到完整的地球和飞船轨道
     controls.dampingFactor = 0.05; // 增加阻尼效果
-    controls.autoRotateSpeed = 0.5; // 减慢自动旋转速度
+    // 相机自动环绕速度（OrbitControls 口径：2.0 ≈ 30 秒/圈，故 0.5 ≈ 120 秒/圈 ≈ 3°/秒）
+    // 观赛大屏宜 0.15~0.25（约 4~7 分钟一圈）：太快容易晕，也看不清飞船细节
+    const CAMERA_AUTO_ROTATE_SPEED = 0.18; // 原值 0.5
+    controls.autoRotateSpeed = CAMERA_AUTO_ROTATE_SPEED;
     controls.autoRotate = true;
     // 设置控制器的目标为地球中心，确保相机始终对准地球
     controls.target.set(0, 0, 0);
     sceneFolder.addBinding(controls, 'autoRotate', { label: 'controls.autoRotate' })
+    // 转速实时可调（拖动即生效，无需重新构建）
+    sceneFolder.addBinding(controls, 'autoRotateSpeed', {
+        label: 'autoRotateSpeed',
+        min: 0,
+        max: 1.5,
+        step: 0.01
+    })
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // 降低环境光强度
     scene.add(ambientLight);
@@ -177,6 +189,8 @@ function initScene() {
     let autoShowcaseSystem = null;
     let ceremonySystem = null;
     let lightOrbSystem = new LightOrbSystem(scene)
+    let cosmicBackground = new CosmicBackgroundSystem(scene, { earthRadius: 100 });
+    cosmicBackground.create(); // 不放 createEarthGithub 内——三种地球类型共享背景
     const earthTypes = {
         "earth-simple": ceateEarthSimple,
         "earth-threejs-journey": createEarthThreejsJourney,
@@ -898,6 +912,9 @@ function initScene() {
 
         // 更新光团动画
         lightOrbSystem.update(delta);
+
+        // 更新宇宙背景（星云流动/银河旋转/星点闪烁）
+        cosmicBackground.update(delta);
         
         renderer.render(scene, renderCamera);
         // composer.render();
@@ -910,7 +927,7 @@ function initScene() {
     render();
 
     function dispose(){
-        stats.dom.remove()
+        // stats.dom.remove() // stats 定义已注释，此行会抛 ReferenceError 令整个 dispose 链断裂
         clearResizeEventListener()
         cancelAnimationFrame(tickId)
         // 清理主题变化事件监听器
@@ -936,8 +953,11 @@ function initScene() {
             orb.geometry.dispose();
             orb.material.dispose();
         });
-        
-        
+
+        // 清理宇宙背景
+        cosmicBackground?.dispose();
+
+
         scene.clear()
         renderer.dispose()
         controls.dispose()

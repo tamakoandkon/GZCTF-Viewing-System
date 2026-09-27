@@ -37,3 +37,12 @@ lerna-debug.log*
 # TypeScript 相关
 *.tsbuildinfo
 next-env.d.ts
+
+# 本地验证工具 / 编辑器与系统残留
+.shotsky.mjs
+.trae/
+*.win
+debug.log
+
+# 含真实赛事数据的截图（不要提交）
+reports/screenshots/cosmic-bg-check-*.png

@@ -60,16 +60,15 @@ export function EventsFeed({ events, onEventClick }: EventsFeedProps) {
     }
   }
 
-  // 始终显示所有事件，不限制数量
-  const safeEvents = Array.isArray(events) ? events : []
-  const sortedEvents = [...safeEvents].sort((a, b) => b.time - a.time)
+  // 始終顯示所有事件，不限制數量
+  const sortedEvents = [...events].sort((a, b) => b.time - a.time)
   const visibleEvents = sortedEvents.slice(0, 15)
 
-  // 计算最近5分钟的事件活跃度
+  // 計算最近5分鐘的事件活躍度
   const now = Date.now()
   const fiveMinutesAgo = now - 10 * 60 * 1000 // 5分鐘 = 300,000毫秒
   const recentEvents = events.filter(e => e.time >= fiveMinutesAgo)
-  const maxRecentEvents = 100 // 假设5分钟内最多50个事件算满活跃度
+  const maxRecentEvents = 100 // 假設5分鐘內最多50個事件算滿活躍度
   const activityRate = Math.min(100, (recentEvents.length / maxRecentEvents) * 100)
 
   const toggleEventExpansion = (eventId: string) => {
@@ -95,7 +94,7 @@ export function EventsFeed({ events, onEventClick }: EventsFeedProps) {
 
   return (
     <div className="h-full flex flex-col space-y-1.5 lg:space-y-3 overflow-hidden">
-      {/* 事件统计 - 主题适配，固定在頂部不被擠壓 */}
+      {/* 事件統計 - 主題適配，固定在頂部不被擠壓 */}
       <div className="flex-shrink-0 glass-panel p-2 lg:p-3 neon-border glow-effect" style={{ color: isDark ? "#67E8F9" : "#00BCD4" }}>
         <div className="text-center">
           <div className="text-sm lg:text-base font-bold mb-1 lg:mb-1.5">

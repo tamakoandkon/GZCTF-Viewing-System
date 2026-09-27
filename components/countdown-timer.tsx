@@ -22,7 +22,7 @@ export function CountdownTimer({ endTimeUtc, startTimeUtc, title }: CountdownTim
     progress: 0,
   })
 
-  // ✅ 修复：初始化为0，避免hydration错误
+  // ✅ 修復：初始化為0，避免hydration錯誤
   const [currentTime, setCurrentTime] = useState<number>(0)
   const [isClient, setIsClient] = useState(false)
 
@@ -95,7 +95,7 @@ export function CountdownTimer({ endTimeUtc, startTimeUtc, title }: CountdownTim
   }
 
   useEffect(() => {
-    // ✅ 修复：只在客户端设置时间
+    // ✅ 修復：只在客戶端設置時間
     setIsClient(true)
     initialMountTime.current = Date.now()
     setCurrentTime(Date.now())
@@ -203,7 +203,7 @@ export function CountdownTimer({ endTimeUtc, startTimeUtc, title }: CountdownTim
             </div>
           </div>
         )}
-        {/* ✅ 修复：只在客户端显示时间 */}
+        {/* ✅ 修復：只在客戶端顯示時間 */}
         {isClient && (
           <div className="text-xs text-muted mt-1 text-right">{formatTime(currentTime)}</div>
         )}

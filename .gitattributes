@@ -1,0 +1,13 @@
+# 统一以 LF 存储，避免 Windows CRLF 造成整文件"假改动"
+* text=auto eol=lf
+
+# 二进制资源不做换行转换
+*.fbx binary
+*.glb binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary

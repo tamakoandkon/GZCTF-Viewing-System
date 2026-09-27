@@ -18,7 +18,7 @@ export function SettingsPanel({ onToggleGUI, isGUIVisible = false }: SettingsPan
     setIsAnimating(true)
     toggleTheme()
 
-    // 动画完成后重置状态
+    // 動畫完成後重置狀態
     setTimeout(() => {
       setIsAnimating(false)
     }, 600)
@@ -26,13 +26,13 @@ export function SettingsPanel({ onToggleGUI, isGUIVisible = false }: SettingsPan
 
   const handleGUIToggle = () => {
     onToggleGUI?.()
-    // 触发全局GUI切换事件
+    // 觸發全局GUI切換事件
     window.dispatchEvent(new CustomEvent('toggleGUI'))
   }
 
   return (
     <div className="relative">
-      {/* 主设置按钮 */}
+      {/* 主設置按鈕 */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className={`
@@ -58,7 +58,7 @@ export function SettingsPanel({ onToggleGUI, isGUIVisible = false }: SettingsPan
           }`} 
         />
         
-        {/* 背景装饰效果 */}
+        {/* 背景裝飾效果 */}
         <div
           className={`
             absolute inset-0 rounded-xl opacity-20
@@ -71,7 +71,7 @@ export function SettingsPanel({ onToggleGUI, isGUIVisible = false }: SettingsPan
           `}
         />
 
-        {/* 能量脉冲效果 */}
+        {/* 能量脈衝效果 */}
         {isAnimating && (
           <div
             className={`
@@ -82,7 +82,7 @@ export function SettingsPanel({ onToggleGUI, isGUIVisible = false }: SettingsPan
         )}
       </button>
 
-      {/* 展开的设置菜单 */}
+      {/* 展開的設置菜單 */}
       {isExpanded && (
         <div className={`
           absolute top-14 right-0 z-50
@@ -91,7 +91,7 @@ export function SettingsPanel({ onToggleGUI, isGUIVisible = false }: SettingsPan
           transition-all duration-300 ease-in-out
           ${isDark ? "bg-slate-900/95" : "bg-blue-50/95"}
         `}>
-          {/* 主题切换 */}
+          {/* 主題切換 */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Palette className={`w-4 h-4 ${isDark ? "text-cyan-400" : "text-blue-600"}`} />
@@ -134,7 +134,7 @@ export function SettingsPanel({ onToggleGUI, isGUIVisible = false }: SettingsPan
             </button>
           </div>
 
-          {/* GUI面板切换 */}
+          {/* GUI面板切換 */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Globe className={`w-4 h-4 ${isDark ? "text-cyan-400" : "text-blue-600"}`} />
@@ -179,7 +179,7 @@ export function SettingsPanel({ onToggleGUI, isGUIVisible = false }: SettingsPan
             </button>
           </div>
 
-          {/* 测试工具 */}
+          {/* 測試工具 */}
           <div className="border-t border-border-primary/30 pt-2 mt-2 space-y-1.5">
             <div className="text-xs text-muted flex items-center gap-1.5">
               <FlaskConical className="w-3 h-3 text-yellow-400" />测试工具
@@ -191,7 +191,7 @@ export function SettingsPanel({ onToggleGUI, isGUIVisible = false }: SettingsPan
         </div>
       )}
 
-      {/* 点击外部关闭菜单 */}
+      {/* 點擊外部關閉菜單 */}
       {isExpanded && (
         <div
           className="fixed inset-0 z-40"
