@@ -55,7 +55,9 @@ function buildSpaceshipPrototype(): Promise<ShipPrototype> {
             geometry.setAttribute('position', new THREE.BufferAttribute(pos, 3))
             geometry.setAttribute('normal', new THREE.BufferAttribute(nrm, 3, true))
             geometry.setAttribute('color', new THREE.BufferAttribute(col, 3, true))
-            geometry.setAttribute('aAccent', new THREE.BufferAttribute(acc, 1, true))
+            // 注意：aAccent 是 0/1 的整数值，必须 normalized=false ——
+            // 若归一化成 1/255，队伍色会几乎不可见（飞船看起来发白）
+            geometry.setAttribute('aAccent', new THREE.BufferAttribute(acc, 1, false))
             geometry.setIndex(new THREE.BufferAttribute(idx, 1))
 
             const center = new THREE.Vector3((minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2)

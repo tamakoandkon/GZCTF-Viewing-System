@@ -19,7 +19,7 @@ import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js'
 
 const SRC = process.argv[2] || 'public/models/xwing.fbx'
 const OUT = process.argv[3] || 'public/models/xwing.ship'
-const CELL = Number(process.argv[4] || 6) // 聚类网格大小（模型单位；模型最长边约 1090）
+const CELL = Number(process.argv[4] || 4) // 聚类网格大小（模型单位；模型最长边约 1090）
 
 // ---- 涂装常量（与 src/globe/Spaceship.ts 保持一致）----
 const LIVERY = {
@@ -135,7 +135,8 @@ for (const [k, c] of cellMap) {
   cellIndex.set(k, outPos.length / 3)
   outPos.push(c.x / c.n, c.y / c.n, c.z / c.n)
   outCol.push(c.r / c.n, c.g / c.n, c.b / c.n)
-  outAcc.push(c.a / c.n > 0.5 ? 1 : 0)
+  // 只要格内有条纹顶点就标记为条纹：细条纹不会被邻接机身的平均稀释掉
+  outAcc.push(c.a > 0 ? 1 : 0)
 }
 const outIdx = []
 let dropped = 0
