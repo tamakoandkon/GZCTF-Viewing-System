@@ -1,86 +1,25 @@
 // @ts-nocheck
 import * as THREE from 'three';
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
-// ---- 飞船模型配置 ----
-// 换模型只需改这里：MODEL_URL 指向 public/models/ 下的文件；轴向不对时调 MODEL_ROT_*
-const MODEL_URL = '/models/xwing.fbx'; // 原模型：/models/futuristic_starship.fbx
+// ---- 飞船尺寸与朝向配置 ----
 // 飞船目标尺寸（世界单位）= SHIP_SIZE_FACTOR × finalSize
-// 旧公式（0.36）来自旧模型原生 2.004 × 0.18 —— 换算下来船体仅约 0.7 世界单位，
-// 在默认视距（地球半径 100、轨道半径 200~280）下不足 1 像素，等于看不见。故放大到可辨量级。
 const SHIP_SIZE_FACTOR = 24;
-// 机身着色：顶点色固定为"机身白 + 深色细节"，条纹区由 aAccent 蒙版标记，
-// 颜色每队不同（uAccent uniform 注入）；机身另加极轻微色调差异（uHullShift）便于分辨。
-const MODEL_ROT_X = 0;
-const MODEL_ROT_Y = 0;
-const MODEL_ROT_Z = 0;
-// 机头是否始终朝向地球球心（true=盯着地球飞；false=旧行为，朝轨道切线方向）
+// 机头是否始终朝向地球球心（true=盯着地球飞；false=朝轨道切线方向）
 const FACE_EARTH = true;
 // 朝向计算复用临时对象（避免每帧 new）
 const _lookM = new THREE.Matrix4();
 const _origin = new THREE.Vector3(0, 0, 0);
 const _upAxis = new THREE.Vector3(0, 1, 0);
 
-// ---- X-wing 涂装（模型无贴图，用几何规则刷顶点色 + 队伍色蒙版）----
-// 坐标参考：机头 z=-819，机尾 z=+271，机长 1090；翼展 ±461；座舱盖在 z≈-298 顶部
-const LIVERY = {
-    hull: '#d9d6cd',        // 机身白（参考图为暖调米白）
-    hullDark: '#b9b6ac',    // 机腹/背板稍暗
-    canopy: '#24272c',      // 座舱盖（深色玻璃）
-    engineDark: '#34373d',  // 引擎进气口/喷口
-    cannon: '#9aa0a6',      // 翼尖机炮
-    cannonTip: '#3a3d42',   // 炮口
-}
-const MODEL_Z_NOSE = -819
-const MODEL_Z_TAIL = 271
-const MODEL_LEN = MODEL_Z_TAIL - MODEL_Z_NOSE
-const MODEL_HALF_SPAN = 461
-// 做旧：顶点级微噪声，避免"塑料感"
-function weatherFactor(x: number, y: number, z: number): number {
-    const h = Math.sin(x * 0.07) * Math.cos(y * 0.057) * Math.sin(z * 0.031)
-    return 0.94 + 0.06 * h
-}
-/** 按部件名 + 空间位置决定某顶点的涂装（模型原始坐标）
- *  return 1 = 该顶点属于"队伍色区域"（条纹/短舱环），颜色由材质 uniform 注入；
- *  return 0 = 该顶点用 out 里的固定颜色（机身白/深色细节）。 */
-function paintVertex(x: number, y: number, z: number, part: string, out: THREE.Color): number {
-    const t = (z - MODEL_Z_NOSE) / MODEL_LEN   // 0=机头, 1=机尾
-    const ax = Math.abs(x)
-    const spanR = ax / MODEL_HALF_SPAN         // 翼展归一
+// ---- 飞船模型 ----
+// 模型已由 scripts/assets/build-ship-binary.mjs 预处理为精简二进制（约 0.8MB）。
+// 浏览器端只做零拷贝读取，不再现场解析 11MB FBX —— 后者实测需 20~30 秒且低配机器会失败
+// （表现就是"只有光晕、看不到飞船"）。
+// 换模型：把新 FBX 放到 public/models/ 后运行
+//   node scripts/assets/build-ship-binary.mjs public/models/<新模型>.fbx public/models/xwing.ship [聚类网格]
+const MODEL_BIN_URL = '/models/xwing.ship';
 
-    if (part.includes('window')) { out.set(LIVERY.canopy); return 0 }
-    if (part.includes('rotor')) { out.set(LIVERY.engineDark); return 0 }
-    if (part.includes('thruster')) { out.set(LIVERY.engineDark); return 0 }
-    if (part.includes('engine')) {
-        // 短舱：前端进气口深色 → 其后一圈队伍色环
-        if (t < 0.655) { out.set(LIVERY.engineDark); return 0 }
-        if (t >= 0.655 && t < 0.70) { out.set(LIVERY.hull); return 1 }
-        out.set(LIVERY.hull); return 0
-    }
-    if (part.includes('blaster')) {
-        out.set(spanR > 0.93 ? LIVERY.cannonTip : LIVERY.cannon); return 0
-    }
-    if (part.includes('mainwingsurfaces')) {
-        // 机翼：两道细的跨展向队伍色条纹
-        if ((spanR > 0.33 && spanR < 0.385) || (spanR > 0.565 && spanR < 0.62)) {
-            out.set(LIVERY.hull); return 1
-        }
-        out.set(y < -20 ? LIVERY.hullDark : LIVERY.hull); return 0
-    }
-    if (part.includes('body')) {
-        // 机身：座舱前方、上侧面一条窄队伍色条纹
-        if (ax < 62 && t > 0.10 && t < 0.44 && y > 2 && y < 42) { out.set(LIVERY.hull); return 1 }
-        out.set(y < -25 ? LIVERY.hullDark : LIVERY.hull); return 0
-    }
-    out.set(LIVERY.hull)
-    return 0
-}
-
-
-// 旧实现是每个 Spaceship 各加载+解析一次 FBX；新模型有 336 个网格 / 118 万顶点，
-// 20 艘船就是 20 次解析 + 6720 次 draw call（渲染会卡坏）。
-// 改为：全局只加载+合并一次 -> 各船共享同一份几何体，每船 1 次 draw call。
+// 共享原型：全局只加载一次，所有飞船复用同一份几何体
 interface ShipPrototype {
     geometry: THREE.BufferGeometry
     longest: number
@@ -91,54 +30,38 @@ let prototypePromise: Promise<ShipPrototype> | null = null
 function buildSpaceshipPrototype(): Promise<ShipPrototype> {
     if (!prototypePromise) {
         prototypePromise = (async () => {
-            const loader = new FBXLoader()
-            const raw = await loader.loadAsync(MODEL_URL)
-            raw.rotation.set(MODEL_ROT_X, MODEL_ROT_Y, MODEL_ROT_Z)
-            raw.updateMatrixWorld(true)
+            const t0 = performance.now()
+            const res = await fetch(MODEL_BIN_URL)
+            if (!res.ok) throw new Error(`模型资源加载失败: HTTP ${res.status}`)
+            const ab = await res.arrayBuffer()
+            const dv = new DataView(ab)
+            const magic = String.fromCharCode(dv.getUint8(0), dv.getUint8(1), dv.getUint8(2), dv.getUint8(3))
+            if (magic !== 'SHIP') throw new Error('模型资源格式不正确（应由 build-ship-binary.mjs 生成）')
 
-            // 把 336 个子网格烘焙到世界矩阵后合并成 1 个几何体，同时按部件名+位置烘焙顶点色涂装
-            const geos: THREE.BufferGeometry[] = []
-            const tmpColor = new THREE.Color()
-            raw.traverse((n: any) => {
-                if (!n.isMesh || !n.geometry?.attributes?.position) return
-                let g: THREE.BufferGeometry = n.geometry.clone()
-                g.applyMatrix4(n.matrixWorld)
-                for (const key of Object.keys(g.attributes)) {
-                    if (key !== 'position' && key !== 'normal' && key !== 'uv' && key !== 'color') g.deleteAttribute(key)
-                }
-                if (!g.attributes.normal) g.computeVertexNormals()
-                if (!g.attributes.uv) {
-                    g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2))
-                }
-                if (g.index) g = g.toNonIndexed()   // 统一为非索引，保证可合并
+            const count = dv.getUint32(8, true)
+            const indexCount = dv.getUint32(12, true)
+            const minX = dv.getFloat32(16, true), minY = dv.getFloat32(20, true), minZ = dv.getFloat32(24, true)
+            const maxX = dv.getFloat32(28, true), maxY = dv.getFloat32(32, true), maxZ = dv.getFloat32(36, true)
 
-                // 涂装烘焙：每个顶点按 (部件名, 位置) 定色，并叠加做旧噪声
-                // 同时烘焙"队伍色蒙版" aAccent（1 = 条纹区，颜色由每队材质 uniform 注入）
-                const pos = g.attributes.position
-                const cols = new Float32Array(pos.count * 3)
-                const accents = new Float32Array(pos.count)
-                const part = String(n.name || '').toLowerCase()
-                for (let i = 0; i < pos.count; i++) {
-                    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i)
-                    accents[i] = paintVertex(x, y, z, part, tmpColor)
-                    const w = weatherFactor(x, y, z)
-                    cols[i * 3] = tmpColor.r * w
-                    cols[i * 3 + 1] = tmpColor.g * w
-                    cols[i * 3 + 2] = tmpColor.b * w
-                }
-                g.setAttribute('color', new THREE.BufferAttribute(cols, 3))
-                g.setAttribute('aAccent', new THREE.BufferAttribute(accents, 1))
-                geos.push(g)
-            })
-            const merged = geos.length === 1 ? geos[0] : mergeGeometries(geos, false)
-            if (!merged) throw new Error('几何体合并失败')
-            merged.computeBoundingBox()
-            const bb = merged.boundingBox!
-            const size = new THREE.Vector3(); bb.getSize(size)
-            const center = new THREE.Vector3(); bb.getCenter(center)
-            const longest = Math.max(size.x, size.y, size.z) || 1
-            console.log(`[Spaceship] 共享模型就绪：${geos.length} 个网格已合并，顶点 ${merged.attributes.position.count}，最长边 ${longest.toFixed(1)}`)
-            return { geometry: merged, longest, center }
+            let off = 40
+            const pos = new Float32Array(ab, off, count * 3); off += count * 12
+            const nrm = new Int8Array(ab, off, count * 3); off += count * 3
+            const col = new Uint8Array(ab, off, count * 3); off += count * 3
+            const acc = new Uint8Array(ab, off, count); off += count
+            off += (4 - (off % 4)) % 4   // 索引段 4 字节对齐
+            const idx = new Uint32Array(ab, off, indexCount)
+
+            const geometry = new THREE.BufferGeometry()
+            geometry.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+            geometry.setAttribute('normal', new THREE.BufferAttribute(nrm, 3, true))
+            geometry.setAttribute('color', new THREE.BufferAttribute(col, 3, true))
+            geometry.setAttribute('aAccent', new THREE.BufferAttribute(acc, 1, true))
+            geometry.setIndex(new THREE.BufferAttribute(idx, 1))
+
+            const center = new THREE.Vector3((minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2)
+            const longest = Math.max(maxX - minX, maxY - minY, maxZ - minZ) || 1
+            console.log(`[Spaceship] 精简模型就绪：${count} 顶点 / ${indexCount / 3} 三角形，用时 ${(performance.now() - t0).toFixed(0)}ms`)
+            return { geometry, longest, center }
         })()
     }
     return prototypePromise
