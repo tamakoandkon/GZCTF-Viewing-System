@@ -244,12 +244,47 @@ export default class Spaceship extends THREE.Object3D {
     /**
      * 异步加载FBX模型
      */
-    async loadFBXModel() {
-        try {
-            // 根据排名调整大小（缩小差距）
-            const rankMultiplier = this.rank <= 3 ? (this.rank === 1 ? 1.3 : this.rank === 2 ? 1.2 : 1.1) : 1.0;
-            const finalSize = this.size * rankMultiplier;
+    /**
+     * 占位机体：共享 3D 模型要解析 118 万顶点（实测 20~30 秒），
+     * 在此之前先显示一个简易 X 形战机，避免"只有光晕、看不到飞船"。
+     * 模型就绪后会被真实 X-wing 替换掉。
+     */
+    createPlaceholderMesh(finalSize) {
+        const L = finalSize * SHIP_SIZE_FACTOR;
+        const g = new THREE.Group();
+        const mat = new THREE.MeshPhongMaterial({
+            color: new THREE.Color().setHSL(this.colorHue / 360, 0.55, 0.55),
+            specular: new THREE.Color('#cfd8e3'),
+            shininess: 40,
+            side: THREE.DoubleSide,
+        });
+        const body = new THREE.Mesh(new THREE.BoxGeometry(L * 0.16, L * 0.14, L * 0.95), mat);
+        g.add(body);
+        for (const [sx, sy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+            const wing = new THREE.Mesh(new THREE.BoxGeometry(L * 0.42, L * 0.04, L * 0.2), mat);
+            wing.position.set(sx * L * 0.24, sy * L * 0.1, L * 0.04);
+            wing.rotation.z = sx * sy * 0.1;
+            g.add(wing);
+        }
+        return g;
+    }
 
+    async loadFBXModel() {
+        // 根据排名调整大小（缩小差距）
+        const rankMultiplier = this.rank <= 3 ? (this.rank === 1 ? 1.3 : this.rank === 2 ? 1.2 : 1.1) : 1.0;
+        const finalSize = this.size * rankMultiplier;
+
+        // 外层 wrapper 立即建立：承载每帧朝向动画
+        const wrapper = new THREE.Group();
+        this.spaceshipMesh = wrapper;
+        this.add(wrapper);
+
+        // ① 先挂占位机体 + 光晕（这样飞船一出现就是"看得见的船"）
+        const placeholder = this.createPlaceholderMesh(finalSize);
+        wrapper.add(placeholder);
+        this.createGlow(finalSize);
+
+        try {
             // 全局共享模型：只加载/解析/合并一次，所有飞船复用同一份几何体
             const proto = await buildSpaceshipPrototype();
 
@@ -292,23 +327,19 @@ export default class Spaceship extends THREE.Object3D {
             hull.castShadow = true;
             hull.receiveShadow = false;
 
-            // 外层 wrapper 承载每帧的朝向动画（spaceshipMesh.rotation.* 会被逐帧覆写），
-            // 内层 hull 保留朝向修正与居中
-            const wrapper = new THREE.Group();
+            // ② 模型就绪：换上真机体，移除占位
             wrapper.add(hull);
-            this.spaceshipMesh = wrapper;
-            this.add(wrapper);
-
-            // 创建飞船光晕
-            this.createGlow(finalSize);
+            wrapper.remove(placeholder);
+            placeholder.traverse((o) => { o.geometry?.dispose?.(); o.material?.dispose?.() });
 
             this.modelLoaded = true;
             console.log(`Spaceship model loaded for team ${this.teamName}`);
 
         } catch (error) {
             console.error('Failed to load FBX model:', error);
-            // 如果FBX加载失败，回退到简单的几何体
-            this.createFallbackSpaceship();
+            // 保留占位机体（旧实现"备用模型已删除"会导致这条路径下只剩光晕）
+            console.warn(`Spaceship ${this.teamName}: 模型加载失败，继续使用占位机体`);
+            this.modelLoaded = true;
         }
     }
 
