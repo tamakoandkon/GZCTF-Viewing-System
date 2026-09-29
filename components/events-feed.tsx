@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import type { GameEvent } from "@/types/events"
 import { formatTimeAgo } from "@/utils/format-time"
 import { Flag, Users, Key, Target } from "lucide-react"
@@ -15,6 +15,17 @@ type EventCategory = "solve" | "attack" | "defense" | "all"
 export function EventsFeed({ events, onEventClick }: EventsFeedProps) {
   const { isDark } = useTheme()
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set())
+  const [currentTime, setCurrentTime] = useState<number | null>(null)
+
+  useEffect(() => {
+    const initialTick = window.setTimeout(() => setCurrentTime(Date.now()), 0)
+    const timer = window.setInterval(() => setCurrentTime(Date.now()), 15000)
+
+    return () => {
+      window.clearTimeout(initialTick)
+      window.clearInterval(timer)
+    }
+  }, [])
 
   const getEventIcon = (type: string, values?: string[]) => {
     if (type === "FlagSubmit" && values && values.length > 0) {
@@ -64,11 +75,11 @@ export function EventsFeed({ events, onEventClick }: EventsFeedProps) {
   const sortedEvents = [...events].sort((a, b) => b.time - a.time)
   const visibleEvents = sortedEvents.slice(0, 15)
 
-  // 計算最近5分鐘的事件活躍度
-  const now = Date.now()
-  const fiveMinutesAgo = now - 10 * 60 * 1000 // 5分鐘 = 300,000毫秒
+  // Calculate activity over the latest five-minute window.
+  const referenceTime = currentTime ?? sortedEvents[0]?.time ?? 0
+  const fiveMinutesAgo = referenceTime - 5 * 60 * 1000
   const recentEvents = events.filter(e => e.time >= fiveMinutesAgo)
-  const maxRecentEvents = 100 // 假設5分鐘內最多50個事件算滿活躍度
+  const maxRecentEvents = 50
   const activityRate = Math.min(100, (recentEvents.length / maxRecentEvents) * 100)
 
   const toggleEventExpansion = (eventId: string) => {

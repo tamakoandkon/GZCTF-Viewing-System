@@ -20,7 +20,7 @@ const dracoLoader = new DRACOLoader();
 if (gltfLoader && dracoLoader) {
     // 修复：支持多个Draco解码器路径
     const dracoPaths = ['/draco/', './draco/', 'draco/'];
-    let dracoPathIndex = 0;
+    const dracoPathIndex = 0;
     
     const trySetDracoPath = () => {
         if (dracoPathIndex < dracoPaths.length) {
@@ -1757,9 +1757,6 @@ export default class Earth extends THREE.Object3D {
             '/texture/dot.png',
             'texture/earth/github/dot.png'
         ];
-        
-        let dotTexture = null;
-        let textureLoadIndex = 0;
         
         const tryLoadTexture = (pathIndex) => {
             if (pathIndex >= dotTexturePaths.length) {

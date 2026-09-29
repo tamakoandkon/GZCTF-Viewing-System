@@ -12,65 +12,62 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
+const THEME_KEY = "ctf-theme:v1"
+const LEGACY_THEME_KEY = "ctf-theme"
+
+function isTheme(value: string | null): value is Theme {
+  return value === "dark" || value === "light"
+}
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("dark")
-  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    try {
-      // 从localStorage读取保存的主题设置
-      const savedTheme = localStorage.getItem("ctf-theme") as Theme
-      if (savedTheme && (savedTheme === "dark" || savedTheme === "light")) {
-        setTheme(savedTheme)
-      } else {
-        // 检测系统主题偏好
-        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-        setTheme(prefersDark ? "dark" : "light")
+    const timer = window.setTimeout(() => {
+      try {
+        const storedTheme = localStorage.getItem(THEME_KEY)
+        const legacyTheme = localStorage.getItem(LEGACY_THEME_KEY)
+        const nextTheme = isTheme(storedTheme)
+          ? storedTheme
+          : isTheme(legacyTheme)
+            ? legacyTheme
+            : window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light"
+
+        if (!storedTheme && isTheme(legacyTheme)) {
+          localStorage.setItem(THEME_KEY, legacyTheme)
+          localStorage.removeItem(LEGACY_THEME_KEY)
+        }
+        setTheme(nextTheme)
+      } catch (error) {
+        console.warn("Failed to load theme from localStorage:", error)
       }
-    } catch (error) {
-      // 如果localStorage不可用，使用默认主题
-      console.warn("Failed to load theme from localStorage:", error)
-      setTheme("dark")
-    }
-    setMounted(true)
+    }, 0)
+
+    return () => window.clearTimeout(timer)
   }, [])
 
   useEffect(() => {
-    if (mounted) {
-      try {
-        // 保存主题设置到localStorage
-        localStorage.setItem("ctf-theme", theme)
-      } catch (error) {
-        console.warn("Failed to save theme to localStorage:", error)
-      }
-
-      // 更新document的data-theme属性
-      if (typeof document !== "undefined") {
-        document.documentElement.setAttribute("data-theme", theme)
-        // 更新body的class
-        document.body.className = theme === "dark" ? "theme-dark" : "theme-light"
-      }
-    }
-  }, [theme, mounted])
+    document.documentElement.setAttribute("data-theme", theme)
+    document.body.classList.toggle("theme-dark", theme === "dark")
+    document.body.classList.toggle("theme-light", theme === "light")
+  }, [theme])
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"))
+    const nextTheme = theme === "dark" ? "light" : "dark"
+    setTheme(nextTheme)
+    try {
+      localStorage.setItem(THEME_KEY, nextTheme)
+    } catch (error) {
+      console.warn("Failed to save theme to localStorage:", error)
+    }
   }
 
   const value = {
     theme,
     toggleTheme,
     isDark: theme === "dark",
-  }
-
-  // 避免hydration不匹配
-  if (!mounted) {
-    return (
-      <div className="theme-loading" data-theme="dark">
-        <div className="theme-dark">{children}</div>
-      </div>
-    )
   }
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>

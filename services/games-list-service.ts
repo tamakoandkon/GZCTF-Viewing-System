@@ -25,7 +25,7 @@ export interface GamesApiResponse {
   total: number
 }
 
-export interface GamesListResponse extends Array<GameInfo> {}
+export type GamesListResponse = GameInfo[]
 
 /**
  * 获取游戏列表

@@ -188,8 +188,8 @@ function initScene() {
     let cameraDirector = null; // 运镜导演
     let autoShowcaseSystem = null;
     let ceremonySystem = null;
-    let lightOrbSystem = new LightOrbSystem(scene)
-    let cosmicBackground = new CosmicBackgroundSystem(scene, { earthRadius: 100 });
+    const lightOrbSystem = new LightOrbSystem(scene)
+    const cosmicBackground = new CosmicBackgroundSystem(scene, { earthRadius: 100 });
     cosmicBackground.create(); // 不放 createEarthGithub 内——三种地球类型共享背景
     const earthTypes = {
         "earth-simple": ceateEarthSimple,
@@ -893,7 +893,7 @@ function initScene() {
             !autoShowcaseSystem.isTransitioning;
 
         if (shouldSkipDirectorLookAt) {
-            cameraDirector && cameraDirector.update();
+            cameraDirector?.update();
         } else if (!cameraDirector || !cameraDirector.isDirecting) {
             controls.update();
         } else {
@@ -902,13 +902,13 @@ function initScene() {
         }
         // 运镜过程中跳过controls.update()，确保GSAP动画值不会被覆盖
 
-        earth && earth.update(delta, renderCamera);
+        earth?.update(delta, renderCamera);
         
         // 更新飞船管理器
-        spaceshipManager && spaceshipManager.update(delta);
+        spaceshipManager?.update(delta);
         
-        autoShowcaseSystem && autoShowcaseSystem.update(delta);
-        ceremonySystem && ceremonySystem.update(delta);
+        autoShowcaseSystem?.update(delta);
+        ceremonySystem?.update(delta);
 
         // 更新光团动画
         lightOrbSystem.update(delta);
@@ -939,13 +939,13 @@ function initScene() {
             }
         })
         // 清理飞船管理器
-        spaceshipManager && spaceshipManager.dispose()
+        spaceshipManager?.dispose()
         
         // 清理运镜导演
-        cameraDirector && cameraDirector.dispose()
+        cameraDirector?.dispose()
         
         // 清理自动展示系统
-        autoShowcaseSystem && autoShowcaseSystem.dispose()
+        autoShowcaseSystem?.dispose()
         
         // 清理光团
         lightOrbSystem.orbs.forEach((orb: any) => {

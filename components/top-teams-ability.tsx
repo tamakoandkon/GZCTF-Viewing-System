@@ -26,6 +26,7 @@ export function TopTeamsAbility({ scoreboard }: TopTeamsAbilityProps) {
   const topTeams = useMemo(() => {
     return [...scoreboard.items].sort((a, b) => a.rank - b.rank).slice(0, 5)
   }, [scoreboard.items])
+  const activeIndex = topTeams.length > 0 ? currentIndex % topTeams.length : 0
 
   // 構建挑戰ID到類別的映射
   const challengeIdToCategory = useMemo(() => {
@@ -41,7 +42,7 @@ export function TopTeamsAbility({ scoreboard }: TopTeamsAbilityProps) {
   // 計算當前展示隊伍的數據
   const currentTeamData = useMemo(() => {
     if (topTeams.length === 0) return null
-    const team = topTeams[currentIndex]
+    const team = topTeams[activeIndex]
 
     const stats: Record<string, { solved: number; total: number }> = {}
     
@@ -70,29 +71,29 @@ export function TopTeamsAbility({ scoreboard }: TopTeamsAbilityProps) {
         }
       })
       .filter(item => item.total > 0) // 只顯示有題目的類別
-  }, [topTeams, currentIndex, scoreboard.challenges, challengeIdToCategory])
-
-  useEffect(() => {
-    if (currentIndex >= topTeams.length) setCurrentIndex(0)
-  }, [currentIndex, topTeams.length])
+  }, [topTeams, activeIndex, scoreboard.challenges, challengeIdToCategory])
 
   useEffect(() => {
     if (topTeams.length <= 1) return
 
+    let transitionTimer: ReturnType<typeof setTimeout> | undefined
     const interval = setInterval(() => {
       setIsTransitioning(true)
-      setTimeout(() => {
+      transitionTimer = setTimeout(() => {
         setCurrentIndex((prev) => (prev + 1) % topTeams.length)
         setIsTransitioning(false)
       }, 500)
     }, 15000)
 
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      if (transitionTimer) clearTimeout(transitionTimer)
+    }
   }, [topTeams.length])
 
   if (topTeams.length === 0) return null
 
-  const currentTeam = topTeams[currentIndex]
+  const currentTeam = topTeams[activeIndex]
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -143,7 +144,7 @@ export function TopTeamsAbility({ scoreboard }: TopTeamsAbilityProps) {
             <div
               key={idx}
               className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
-                idx === currentIndex ? "bg-cyan-400 scale-125" : "bg-gray-600"
+                idx === activeIndex ? "bg-cyan-400 scale-125" : "bg-gray-600"
               }`}
             />
           ))}

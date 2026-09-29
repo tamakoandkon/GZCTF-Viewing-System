@@ -3,15 +3,13 @@
 import { useEffect, useState, useRef } from "react"
 import { Clock } from "lucide-react"
 import { formatTime } from "@/utils/format-time"
-import { useTheme } from "@/contexts/theme-context"
 
 interface CountdownTimerProps {
   endTimeUtc: number
   startTimeUtc: number
-  title: string
 }
 
-export function CountdownTimer({ endTimeUtc, startTimeUtc, title }: CountdownTimerProps) {
+export function CountdownTimer({ endTimeUtc, startTimeUtc }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -22,97 +20,72 @@ export function CountdownTimer({ endTimeUtc, startTimeUtc, title }: CountdownTim
     progress: 0,
   })
 
-  // ✅ 修復：初始化為0，避免hydration錯誤
+  // Keep the server and first client render deterministic to avoid hydration drift.
   const [currentTime, setCurrentTime] = useState<number>(0)
-  const [isClient, setIsClient] = useState(false)
 
   const initialMountTime = useRef<number>(0)
   const initialTotalDuration = useRef<number>(0)
-  const currentTimeTimer = useRef<NodeJS.Timeout | null>(null)
   const ceremonyFired = useRef<boolean>(false)
 
-  const themeContext = useTheme()
-  let isDark = true
-  try {
-    isDark = themeContext.isDark
-  } catch (error) {
-    console.warn("Theme context not available, using default dark theme")
-  }
-
-  const calculateTimeLeft = () => {
-    const now = Date.now()
-    const isStarted = now >= startTimeUtc
-    const isEnded = now >= endTimeUtc
-
-    if (initialTotalDuration.current === 0) {
-      if (isEnded) {
-        initialTotalDuration.current = 1
-      } else if (isStarted) {
-        initialTotalDuration.current = Math.max(1, endTimeUtc - startTimeUtc)
-      } else {
-        initialTotalDuration.current = Math.max(1, startTimeUtc - initialMountTime.current)
-      }
-    }
-
-    let difference = 0
-    if (isEnded) {
-      difference = 0
-      if (!ceremonyFired.current) {
-        ceremonyFired.current = true
-        window.dispatchEvent(new CustomEvent('game:ended'))
-      }
-    } else if (isStarted) {
-      difference = endTimeUtc - now
-    } else {
-      difference = startTimeUtc - now
-    }
-
-    let progress = 0
-    if (isEnded) {
-      progress = 1
-    } else if (isStarted) {
-      const elapsed = now - startTimeUtc
-      progress = Math.min(1, Math.max(0, elapsed / initialTotalDuration.current))
-    } else {
-      const elapsedWait = now - initialMountTime.current
-      progress = Math.min(1, Math.max(0, 1 - elapsedWait / initialTotalDuration.current))
-    }
-
-    const days = Math.floor(difference / (1000 * 60 * 60 * 24))
-    const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-    const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60))
-    const seconds = Math.floor((difference % (1000 * 60)) / 1000)
-
-    setTimeLeft({
-      days,
-      hours,
-      minutes,
-      seconds,
-      isStarted,
-      isEnded,
-      progress,
-    })
-  }
-
   useEffect(() => {
-    // ✅ 修復：只在客戶端設置時間
-    setIsClient(true)
     initialMountTime.current = Date.now()
-    setCurrentTime(Date.now())
-    
-    calculateTimeLeft()
-    const countdownTimer = setInterval(calculateTimeLeft, 1000)
+    initialTotalDuration.current = 0
+    ceremonyFired.current = false
 
-    const updateCurrentTime = () => {
-      setCurrentTime(Date.now())
+    const updateTime = () => {
+      const now = Date.now()
+      const isStarted = now >= startTimeUtc
+      const isEnded = now >= endTimeUtc
+
+      if (initialTotalDuration.current === 0) {
+        if (isEnded) {
+          initialTotalDuration.current = 1
+        } else if (isStarted) {
+          initialTotalDuration.current = Math.max(1, endTimeUtc - startTimeUtc)
+        } else {
+          initialTotalDuration.current = Math.max(1, startTimeUtc - initialMountTime.current)
+        }
+      }
+
+      let difference = 0
+      if (isEnded) {
+        if (!ceremonyFired.current) {
+          ceremonyFired.current = true
+          window.dispatchEvent(new CustomEvent('game:ended'))
+        }
+      } else if (isStarted) {
+        difference = endTimeUtc - now
+      } else {
+        difference = startTimeUtc - now
+      }
+
+      let progress = 0
+      if (isEnded) {
+        progress = 1
+      } else if (isStarted) {
+        progress = Math.min(1, Math.max(0, (now - startTimeUtc) / initialTotalDuration.current))
+      } else {
+        progress = Math.min(1, Math.max(0, 1 - (now - initialMountTime.current) / initialTotalDuration.current))
+      }
+
+      setCurrentTime(now)
+      setTimeLeft({
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+        minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
+        seconds: Math.floor((difference % (1000 * 60)) / 1000),
+        isStarted,
+        isEnded,
+        progress,
+      })
     }
-    currentTimeTimer.current = setInterval(updateCurrentTime, 1000)
+
+    const initialTick = window.setTimeout(updateTime, 0)
+    const timer = window.setInterval(updateTime, 1000)
 
     return () => {
-      clearInterval(countdownTimer)
-      if (currentTimeTimer.current) {
-        clearInterval(currentTimeTimer.current)
-      }
+      window.clearTimeout(initialTick)
+      window.clearInterval(timer)
     }
   }, [endTimeUtc, startTimeUtc])
 
@@ -203,8 +176,7 @@ export function CountdownTimer({ endTimeUtc, startTimeUtc, title }: CountdownTim
             </div>
           </div>
         )}
-        {/* ✅ 修復：只在客戶端顯示時間 */}
-        {isClient && (
+        {currentTime > 0 && (
           <div className="text-xs text-muted mt-1 text-right">{formatTime(currentTime)}</div>
         )}
       </div>

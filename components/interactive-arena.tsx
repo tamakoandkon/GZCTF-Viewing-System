@@ -31,17 +31,15 @@ export function InteractiveArena({ events, teams, gameDetails, allTeams }: Inter
 
   const [isInitialized, setIsInitialized] = useState(false)
   const deviceCapabilities = useDeviceCapabilities()
-  const [categoryMappings, setCategoryMappings] = useState<Record<string, any>>({})
-  const [lastEventTime, setLastEventTime] = useState<number>(0)
+  const lastEventTimeRef = useRef(0)
 
   // 处理游戏数据中的category映射
   useEffect(() => {
     if (gameDetails && isInitialized) {
       const mappings = getGameCategoryMappings(gameDetails)
-      setCategoryMappings(mappings)
-      
+
       // 延迟高亮对应的国家，确保地球完全加载
-      setTimeout(() => {
+      const timer = window.setTimeout(() => {
         if (globeControllerRef.current?.getEarth) {
           const earth = globeControllerRef.current.getEarth()
           if (earth && earth.highlightCountry) {
@@ -66,23 +64,23 @@ export function InteractiveArena({ events, teams, gameDetails, allTeams }: Inter
           }
         }
       }, 2000) // 延迟2秒确保地球完全加载
+
+      return () => window.clearTimeout(timer)
     }
   }, [gameDetails, isInitialized])
 
   // 处理事件和攻击动画 - 使用allTeams确保所有队伍都能参与攻击
   useEffect(() => {
-    if (events.length > 0 && (allTeams || teams).length > 0 && globeControllerRef.current) {
+    const teamsToSearch = allTeams && allTeams.length > 0 ? allTeams : teams
+    if (events.length > 0 && teamsToSearch.length > 0 && globeControllerRef.current) {
       const spaceshipManager = globeControllerRef.current.getSpaceshipManager()
       if (!spaceshipManager) return
 
       const flagEvents = events.filter((event) => event.type === "FlagSubmit" && event.team && event.values.length > 0)
       const sortedEvents = [...flagEvents].sort((a, b) => b.time - a.time)
-      const newEvents = sortedEvents.filter((event) => event.time > lastEventTime)
+      const newEvents = sortedEvents.filter((event) => event.time > lastEventTimeRef.current)
 
       if (newEvents.length > 0) {
-        // 使用allTeams进行攻击检测，确保所有队伍都能参与攻击
-        const teamsToSearch = allTeams || teams
-        
         newEvents.forEach((event) => {
           const teamName = event.team || ""
           const team = teamsToSearch.find((t) => t.name === teamName)
@@ -115,10 +113,10 @@ export function InteractiveArena({ events, teams, gameDetails, allTeams }: Inter
           }
         })
 
-        setLastEventTime(newEvents[0].time)
+        lastEventTimeRef.current = newEvents[0].time
       }
     }
-  }, [events, allTeams, teams, lastEventTime, gameDetails])
+  }, [events, allTeams, teams, gameDetails])
 
   // 初始化 Three.js 地球
   useEffect(() => {
@@ -129,8 +127,12 @@ export function InteractiveArena({ events, teams, gameDetails, allTeams }: Inter
         const sceneModule: any = await import("../src/scene")
         // 确保canvas存在后再初始化
         const canvas = document.getElementById("webgl") as HTMLCanvasElement | null
-        if (!canvas) return
+        if (disposed || !canvas) return
         const controller = sceneModule.initScene?.()
+        if (disposed) {
+          controller?.dispose?.()
+          return
+        }
         globeControllerRef.current = controller || null
         globeInitedRef.current = true
         setIsInitialized(true)
@@ -185,7 +187,7 @@ export function InteractiveArena({ events, teams, gameDetails, allTeams }: Inter
     if (!spaceshipManager) return
 
     // 始终使用allTeams，确保所有队伍都能参与攻击动画
-    const teamsToUse = allTeams || teams
+    const teamsToUse = allTeams && allTeams.length > 0 ? allTeams : teams
     if (teamsToUse.length > 0) {
       // 限制最多20个飞船
       const maxShips = Math.min(20, deviceCapabilities.isMobile ? 15 : 20)
@@ -220,7 +222,7 @@ export function InteractiveArena({ events, teams, gameDetails, allTeams }: Inter
       // 使用SpaceshipManager的优化更新方法
       spaceshipManager.updateTeams(topTeams)
     }
-  }, [allTeams, isInitialized, deviceCapabilities]) // 移除teams依赖，只使用allTeams
+  }, [allTeams, teams, isInitialized, deviceCapabilities.isMobile])
 
   // 用户交互时暂停自动展示 15 秒
   const handleUserInteraction = () => {
@@ -234,7 +236,7 @@ export function InteractiveArena({ events, teams, gameDetails, allTeams }: Inter
       console.log('test:attack received')
       const mgr = globeControllerRef.current?.getSpaceshipManager?.()
       console.log('mgr:', mgr, 'allTeams:', allTeams?.length, 'teams:', teams?.length)
-      const teamsList = allTeams || teams
+      const teamsList = allTeams && allTeams.length > 0 ? allTeams : teams
       if (!mgr || !teamsList?.length) {
         console.warn('Cannot fire test attack: no manager or teams')
         return
@@ -252,7 +254,7 @@ export function InteractiveArena({ events, teams, gameDetails, allTeams }: Inter
     }
     const onTestPromotion = () => {
       const mgr = globeControllerRef.current?.getSpaceshipManager?.()
-      const teamsList = allTeams || teams
+      const teamsList = allTeams && allTeams.length > 0 ? allTeams : teams
       if (!mgr || !teamsList?.length) return
       const rank1 = teamsList.find((t: any) => t.rank === 1)
       const rank2 = teamsList.find((t: any) => t.rank === 2)

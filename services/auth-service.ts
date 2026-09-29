@@ -1,11 +1,5 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''
-
 export interface UserProfile {
   userName: string
-  name: string
-  email: string
-  image?: string
-  role: 'admin' | 'user'
 }
 
 interface LoginCredentials {
@@ -19,13 +13,42 @@ interface LoginResult {
 }
 
 // Persistent auth state in localStorage
-const AUTH_KEY = 'gzctf-viewer-auth'
+const AUTH_KEY = 'gzctf-viewer-auth:v1'
+const LEGACY_AUTH_KEY = 'gzctf-viewer-auth'
+
+function parseUserProfile(raw: string | null): UserProfile | null {
+  if (!raw) return null
+
+  try {
+    const value: unknown = JSON.parse(raw)
+    if (
+      typeof value === 'object' &&
+      value !== null &&
+      'userName' in value &&
+      typeof value.userName === 'string' &&
+      value.userName.length > 0
+    ) {
+      return { userName: value.userName }
+    }
+  } catch {
+    // Treat malformed or stale storage as logged out.
+  }
+
+  return null
+}
 
 function loadAuth(): UserProfile | null {
   if (typeof window === 'undefined') return null
   try {
-    const raw = localStorage.getItem(AUTH_KEY)
-    return raw ? JSON.parse(raw) : null
+    const currentProfile = parseUserProfile(localStorage.getItem(AUTH_KEY))
+    if (currentProfile) return currentProfile
+
+    const legacyProfile = parseUserProfile(localStorage.getItem(LEGACY_AUTH_KEY))
+    if (legacyProfile) {
+      saveAuth(legacyProfile)
+      localStorage.removeItem(LEGACY_AUTH_KEY)
+    }
+    return legacyProfile
   } catch {
     return null
   }
@@ -33,12 +56,21 @@ function loadAuth(): UserProfile | null {
 
 function saveAuth(user: UserProfile) {
   if (typeof window === 'undefined') return
-  localStorage.setItem(AUTH_KEY, JSON.stringify(user))
+  try {
+    localStorage.setItem(AUTH_KEY, JSON.stringify({ userName: user.userName }))
+  } catch {
+    // Private browsing and storage policies can make localStorage unavailable.
+  }
 }
 
 function clearAuth() {
   if (typeof window === 'undefined') return
-  localStorage.removeItem(AUTH_KEY)
+  try {
+    localStorage.removeItem(AUTH_KEY)
+    localStorage.removeItem(LEGACY_AUTH_KEY)
+  } catch {
+    // The server cookie still controls API authorization.
+  }
 }
 
 export function isAuthenticated(): boolean {
@@ -65,14 +97,11 @@ export async function login(credentials: LoginCredentials): Promise<LoginResult>
 
     const user: UserProfile = {
       userName: credentials.userName,
-      name: credentials.userName,
-      email: '',
-      role: 'admin'
     }
     saveAuth(user)
     return { succeeded: true }
-  } catch (err: any) {
-    return { succeeded: false, msg: err.message || '网络错误' }
+  } catch (err) {
+    return { succeeded: false, msg: err instanceof Error ? err.message : '网络错误' }
   }
 }
 

@@ -28,12 +28,12 @@ export default function ScoreboardPage() {
   const [gameDetails, setGameDetails] = useState<GameDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const hasData = useRef(false)
+  const hasDataRef = useRef(false)
   const [currentGroupIndex, setCurrentGroupIndex] = useState(0)
-  const [rotationInterval, setRotationInterval] = useState<NodeJS.Timeout | null>(null)
-  const [isRotating, setIsRotating] = useState(true)
-  const [totalGroups, setTotalGroups] = useState(0)
   const [isGUIVisible, setIsGUIVisible] = useState(false)
+  const totalGroups = Math.ceil((scoreboard?.items.length ?? 0) / 10)
+  const isRotating = totalGroups > 1
+  const activeGroupIndex = totalGroups > 0 ? currentGroupIndex % totalGroups : 0
 
   // 认证检查
   useEffect(() => {
@@ -68,11 +68,11 @@ export default function ScoreboardPage() {
         setEvents(eventsData)
         setGameDetail(gameDetailData)
         setGameDetails(gameDetailsData)
-        hasData.current = true
+        hasDataRef.current = true
         setError(null)
       } catch (err) {
         console.error("Failed to fetch data:", err)
-        if (hasData.current) {
+        if (hasDataRef.current) {
           setError("后端暂不可用，已显示缓存数据")
         } else {
           setError("系统连接失败，请稍后重试")
@@ -89,51 +89,16 @@ export default function ScoreboardPage() {
     }
   }, [gameId])
 
-  // Dynamic ranking rotation system
+  // Rotate ranking groups while more than one group is available.
   useEffect(() => {
-    if (!scoreboard?.items || scoreboard.items.length === 0) return
+    if (totalGroups <= 1) return
 
-    // Calculate total groups (10 teams per group)
-    const teamsPerGroup = 10
-    const calculatedTotalGroups = Math.ceil(scoreboard.items.length / teamsPerGroup)
-    setTotalGroups(calculatedTotalGroups)
-
-    // Only rotate if there are multiple groups
-    if (calculatedTotalGroups <= 1) {
-      setIsRotating(false)
-      setCurrentGroupIndex(0)
-      return
-    }
-
-    setIsRotating(true)
-
-    // Clear existing interval
-    if (rotationInterval) {
-      clearInterval(rotationInterval)
-    }
-
-    // Set up rotation interval (15 seconds per group)
     const interval = setInterval(() => {
-      setCurrentGroupIndex((prev) => (prev + 1) % calculatedTotalGroups)
+      setCurrentGroupIndex((previousIndex) => (previousIndex + 1) % totalGroups)
     }, 15000)
 
-    setRotationInterval(interval)
-
-    return () => {
-      if (interval) {
-        clearInterval(interval)
-      }
-    }
-  }, [scoreboard?.items])
-
-  // Cleanup rotation interval on unmount
-  useEffect(() => {
-    return () => {
-      if (rotationInterval) {
-        clearInterval(rotationInterval)
-      }
-    }
-  }, [rotationInterval])
+    return () => clearInterval(interval)
+  }, [totalGroups])
 
   // Get teams for current group
   const teamsWithScoreGap = (() => {
@@ -153,7 +118,7 @@ export default function ScoreboardPage() {
     if (!scoreboard?.items) return []
 
     const teamsPerGroup = 10
-    const startIndex = currentGroupIndex * teamsPerGroup
+    const startIndex = activeGroupIndex * teamsPerGroup
     const endIndex = Math.min(startIndex + teamsPerGroup, teamsWithScoreGap.length)
 
     return teamsWithScoreGap.slice(startIndex, endIndex)
@@ -172,7 +137,7 @@ export default function ScoreboardPage() {
     )
   }
 
-  if (error && !hasData.current) {
+  if (error && !scoreboard) {
     return (
       <div className="min-h-screen deep-space-bg flex items-center justify-center p-4">
         <Alert variant="destructive" className="max-w-md">
@@ -228,7 +193,7 @@ export default function ScoreboardPage() {
               <SettingsPanel onToggleGUI={() => setIsGUIVisible(!isGUIVisible)} isGUIVisible={isGUIVisible} />
             </div>
             <div className="w-full lg:w-64">
-              <CountdownTimer endTimeUtc={gameDetail.end} startTimeUtc={gameDetail.start} title={gameDetail.title} />
+              <CountdownTimer endTimeUtc={gameDetail.end} startTimeUtc={gameDetail.start} />
             </div>
           </div>
         </div>
@@ -246,7 +211,7 @@ export default function ScoreboardPage() {
               <TeamRankings
                 teams={currentGroupTeams}
                 groupInfo={{
-                  currentGroup: currentGroupIndex + 1,
+                  currentGroup: activeGroupIndex + 1,
                   totalGroups: totalGroups,
                   totalTeams: scoreboard?.items?.length || 0,
                 }}
@@ -268,7 +233,7 @@ export default function ScoreboardPage() {
             {/* Add rotation status indicator */}
             <RotationStatus
               isRotating={isRotating}
-              currentGroup={currentGroupIndex}
+              currentGroup={activeGroupIndex}
               totalGroups={totalGroups}
               rotationInterval={15000}
             />

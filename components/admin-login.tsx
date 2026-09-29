@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { login, isAuthenticated, logout, getUserInfo } from "@/services/auth-service"
+import { login, logout, getUserInfo } from "@/services/auth-service"
 import { getGamesList, sortGamesByRecent, getGameStatus, getGameStatusText, getGameStatusColor, formatGameTime, BASE_URL, type GameInfo } from "@/services/games-list-service"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,39 +18,43 @@ export function AdminLogin() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [isLoggedIn, setIsLoggedIn] = useState(isAuthenticated())
   const [showGameSelection, setShowGameSelection] = useState(false)
   const [games, setGames] = useState<GameInfo[]>([])
   const [loadingGames, setLoadingGames] = useState(false)
-  const userInfo = getUserInfo()
+  const [userInfo, setUserInfo] = useState<ReturnType<typeof getUserInfo>>(null)
 
-  // 检查是否已登录，如果是则直接显示游戏选择
   useEffect(() => {
-    if (isLoggedIn && !showGameSelection) {
-      setShowGameSelection(true)
-    }
-  }, [isLoggedIn])
+    const authTimer = window.setTimeout(() => {
+      const storedUser = getUserInfo()
+      if (storedUser) {
+        setUserInfo(storedUser)
+        setShowGameSelection(true)
+      }
+    }, 0)
 
-  // 登录成功后加载游戏列表
-  useEffect(() => {
-    if (showGameSelection && games.length === 0) {
-      loadGames()
-    }
-  }, [showGameSelection])
+    return () => window.clearTimeout(authTimer)
+  }, [])
 
-  const loadGames = async () => {
+  const loadGames = useCallback(async () => {
     setLoadingGames(true)
     try {
       const gamesList = await getGamesList()
-      const sortedGames = sortGamesByRecent(gamesList)
-      setGames(sortedGames)
+      setGames(sortGamesByRecent(gamesList))
     } catch (err) {
       console.error('Failed to load games:', err)
       setError('加载游戏列表失败')
     } finally {
       setLoadingGames(false)
     }
-  }
+  }, [])
+
+  // 登录成功后加载游戏列表
+  useEffect(() => {
+    if (!showGameSelection || games.length > 0) return
+
+    const loadTimer = window.setTimeout(() => void loadGames(), 0)
+    return () => window.clearTimeout(loadTimer)
+  }, [games.length, loadGames, showGameSelection])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -62,7 +66,7 @@ export function AdminLogin() {
       
       if (result.succeeded) {
         setSuccess(true)
-        setIsLoggedIn(true)
+        setUserInfo({ userName })
         
         // 显示游戏选择界面
         setTimeout(() => {
@@ -71,8 +75,8 @@ export function AdminLogin() {
       } else {
         setError(result.msg || '登录失败，请检查用户名和密码')
       }
-    } catch (err: any) {
-      setError(err.message || '登录失败，请检查网络连接')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '登录失败，请检查网络连接')
     } finally {
       setLoading(false)
     }
@@ -82,8 +86,8 @@ export function AdminLogin() {
     setLoading(true)
     try {
       await logout()
-      setIsLoggedIn(false)
       setSuccess(false)
+      setUserInfo(null)
       setShowGameSelection(false)
       setGames([])
       
@@ -153,9 +157,13 @@ export function AdminLogin() {
                     >
                       {game.poster && (
                         <div className="h-32 overflow-hidden rounded-t-lg">
-                          <img 
+                          {/* Poster URLs come from the configured GZCTF backend and may use arbitrary hosts. */}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
                             src={`${BASE_URL}${game.poster}`}
                             alt={game.title}
+                            loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none'

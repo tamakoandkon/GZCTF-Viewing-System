@@ -1,7 +1,7 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { TeamInfo } from "@/types/scoreboard"
-import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react"
+import { Trophy, TrendingUp, TrendingDown } from "lucide-react"
 import { useTheme } from "@/contexts/theme-context"
 
 interface TeamRankingsProps {
@@ -17,7 +17,8 @@ interface TeamRankingsProps {
 
 export function TeamRankings({ teams, groupInfo, onTeamHover, onTeamClick }: TeamRankingsProps) {
   const [hoveredTeam, setHoveredTeam] = useState<number | null>(null)
-  const [previousRankings, setPreviousRankings] = useState<Record<number, number>>({})
+  const previousRankingsRef = useRef<Record<number, number>>({})
+  const [rankingChanges, setRankingChanges] = useState<Record<number, "up" | "down">>({})
   const { isDark } = useTheme()
 
   const topThreeTeams = teams.filter((team) => [1, 2, 3].includes(team.rank))
@@ -29,14 +30,25 @@ export function TeamRankings({ teams, groupInfo, onTeamHover, onTeamClick }: Tea
   useEffect(() => {
     const newRankings: Record<number, number> = {}
     teams.forEach((team) => (newRankings[team.id] = team.rank))
-    setPreviousRankings(newRankings)
+    const changes: Record<number, "up" | "down"> = {}
+
+    teams.forEach((team) => {
+      const previousRank = previousRankingsRef.current[team.id]
+      if (previousRank > team.rank) changes[team.id] = "up"
+      if (previousRank < team.rank) changes[team.id] = "down"
+    })
+    previousRankingsRef.current = newRankings
+
+    const updateFrame = window.requestAnimationFrame(() => setRankingChanges(changes))
+    const clearTimer = window.setTimeout(() => setRankingChanges({}), 3000)
+
+    return () => {
+      window.cancelAnimationFrame(updateFrame)
+      window.clearTimeout(clearTimer)
+    }
   }, [teams])
 
-  const getRankingChange = (teamId: number, currentRank: number) => {
-    const previousRank = previousRankings[teamId]
-    if (!previousRank) return null
-    return previousRank > currentRank ? "up" : previousRank < currentRank ? "down" : "same"
-  }
+  const getRankingChange = (teamId: number) => rankingChanges[teamId] ?? null
 
   const formatScoreGap = (team: TeamInfo) => {
     if (team.rank === 1) return "—"
@@ -112,7 +124,7 @@ export function TeamRankings({ teams, groupInfo, onTeamHover, onTeamClick }: Tea
   }
 
   const renderTeamItem = (team: TeamInfo, index: number, isTopThree = false) => {
-    const change = getRankingChange(team.id, team.rank)
+    const change = getRankingChange(team.id)
     const isHovered = hoveredTeam === team.id
 
     // 主题适配的排名颜色
@@ -190,7 +202,6 @@ export function TeamRankings({ teams, groupInfo, onTeamHover, onTeamClick }: Tea
               <span className="text-sm font-medium text-primary truncate">{team.name}</span>
               {change === "up" && <TrendingUp className="w-3 h-3 text-success-green" />}
               {change === "down" && <TrendingDown className="w-3 h-3 text-danger-red" />}
-              {change === "same" && <Minus className="w-3 h-3 text-muted" />}
             </div>
 
             <div className="flex items-center gap-2 mb-1 flex-nowrap">
