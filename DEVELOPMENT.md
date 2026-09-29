@@ -897,7 +897,7 @@ export async function authenticatedFetch(url: string, options = {}) {
 async rewrites() {
     return [{
         source: '/api/:path*',
-        destination: 'http://43.161.239.75:36306/api/:path*',
+        destination: 'http://your-gzctf-server:36306/api/:path*',
     }]
 }
 ```

@@ -11,8 +11,8 @@
 - 渲染循环在 follow 分支仍执行一次相机朝向更新，避免交接帧丢失 lookAt
 
 相关代码：
-- [AutoShowcaseSystem.js](file:///c:/Users/%E7%A7%8B%E6%B0%B4%E4%BB%99/xwechat_files/wxid_groiud6p30z322_246b/msg/file/2025-11/myctfv0.33/src/globe/AutoShowcaseSystem.js#L723-L799)
-- [scene.js](file:///c:/Users/%E7%A7%8B%E6%B0%B4%E4%BB%99/xwechat_files/wxid_groiud6p30z322_246b/msg/file/2025-11/myctfv0.33/src/scene.js#L900-L950)
+- [AutoShowcaseSystem.js](src/globe/AutoShowcaseSystem.js#L723-L799)
+- [scene.js](src/scene.js#L900-L950)
 
 ## 性能数据采集（内置 JSON 导出）
 当 Top3 展示开始/结束时会自动采集帧数据，并在结束后自动下载 JSON 报告文件：

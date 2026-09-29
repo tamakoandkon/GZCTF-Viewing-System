@@ -14,7 +14,8 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:36306/api/:path*',
+        // 保留现有部署端口，同时允许通过环境变量覆盖后端地址。
+        destination: `${process.env.GZCTF_API_ORIGIN || 'http://localhost:36306'}/api/:path*`,
       },
     ];
   },

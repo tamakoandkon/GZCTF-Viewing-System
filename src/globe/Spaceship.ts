@@ -1,6 +1,94 @@
 // @ts-nocheck
 import * as THREE from 'three';
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
+
+// ---- 飞船尺寸与朝向配置 ----
+// 飞船目标尺寸（世界单位）= SHIP_SIZE_FACTOR × finalSize
+const SHIP_SIZE_FACTOR = 24;
+// 机头是否始终朝向地球球心（true=盯着地球飞；false=朝轨道切线方向）
+const FACE_EARTH = true;
+// 朝向计算复用临时对象（避免每帧 new）
+const _lookM = new THREE.Matrix4();
+const _origin = new THREE.Vector3(0, 0, 0);
+const _upAxis = new THREE.Vector3(0, 1, 0);
+
+// ---- 飞船模型 ----
+// 模型已由 scripts/assets/build-ship-binary.mjs 预处理为精简二进制（约 0.8MB）。
+// 浏览器端只做零拷贝读取，不再现场解析 11MB FBX —— 后者实测需 20~30 秒且低配机器会失败
+// （表现就是"只有光晕、看不到飞船"）。
+// 换模型：把新 FBX 放到 public/models/ 后运行
+//   node scripts/assets/build-ship-binary.mjs public/models/<新模型>.fbx public/models/xwing.ship [聚类网格]
+const MODEL_BIN_URL = '/models/xwing.ship';
+
+// 共享原型：全局只加载一次，所有飞船复用同一份几何体
+interface ShipPrototype {
+    geometry: THREE.BufferGeometry
+    longest: number
+    center: THREE.Vector3
+}
+let prototypePromise: Promise<ShipPrototype> | null = null
+let sharedPrototypeGeometry: THREE.BufferGeometry | null = null
+let prototypeGeneration = 0
+
+function buildSpaceshipPrototype(): Promise<ShipPrototype> {
+    if (!prototypePromise) {
+        const generation = prototypeGeneration
+        prototypePromise = (async () => {
+            const t0 = performance.now()
+            const res = await fetch(MODEL_BIN_URL)
+            if (!res.ok) throw new Error(`模型资源加载失败: HTTP ${res.status}`)
+            const ab = await res.arrayBuffer()
+            const dv = new DataView(ab)
+            const magic = String.fromCharCode(dv.getUint8(0), dv.getUint8(1), dv.getUint8(2), dv.getUint8(3))
+            if (magic !== 'SHIP') throw new Error('模型资源格式不正确（应由 build-ship-binary.mjs 生成）')
+
+            const count = dv.getUint32(8, true)
+            const indexCount = dv.getUint32(12, true)
+            const minX = dv.getFloat32(16, true), minY = dv.getFloat32(20, true), minZ = dv.getFloat32(24, true)
+            const maxX = dv.getFloat32(28, true), maxY = dv.getFloat32(32, true), maxZ = dv.getFloat32(36, true)
+
+            let off = 40
+            const pos = new Float32Array(ab, off, count * 3); off += count * 12
+            const nrm = new Int8Array(ab, off, count * 3); off += count * 3
+            const col = new Uint8Array(ab, off, count * 3); off += count * 3
+            const acc = new Uint8Array(ab, off, count); off += count
+            off += (4 - (off % 4)) % 4   // 索引段 4 字节对齐
+            const idx = new Uint32Array(ab, off, indexCount)
+
+            const geometry = new THREE.BufferGeometry()
+            geometry.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+            geometry.setAttribute('normal', new THREE.BufferAttribute(nrm, 3, true))
+            geometry.setAttribute('color', new THREE.BufferAttribute(col, 3, true))
+            // 注意：aAccent 是 0/1 的整数值，必须 normalized=false ——
+            // 若归一化成 1/255，队伍色会几乎不可见（飞船看起来发白）
+            geometry.setAttribute('aAccent', new THREE.BufferAttribute(acc, 1, false))
+            geometry.setIndex(new THREE.BufferAttribute(idx, 1))
+
+            // 管理器可能在网络请求完成前已销毁，避免把迟到的模型留在 GPU 中。
+            if (generation !== prototypeGeneration) {
+                geometry.dispose()
+                throw new Error('飞船模型加载已取消')
+            }
+            sharedPrototypeGeometry = geometry
+
+            const center = new THREE.Vector3((minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2)
+            const longest = Math.max(maxX - minX, maxY - minY, maxZ - minZ) || 1
+            console.log(`[Spaceship] 精简模型就绪：${count} 顶点 / ${indexCount / 3} 三角形，用时 ${(performance.now() - t0).toFixed(0)}ms`)
+            return { geometry, longest, center }
+        })().catch((error) => {
+            // 失败后允许后续飞船重试；不要覆盖新一代的加载 Promise。
+            if (generation === prototypeGeneration) prototypePromise = null
+            throw error
+        })
+    }
+    return prototypePromise
+}
+
+export function disposeSpaceshipPrototype(): void {
+    prototypeGeneration += 1
+    sharedPrototypeGeometry?.dispose()
+    sharedPrototypeGeometry = null
+    prototypePromise = null
+}
 
 export default class Spaceship extends THREE.Object3D {
     /**
@@ -20,6 +108,7 @@ export default class Spaceship extends THREE.Object3D {
      */
     constructor(config = {}) {
         super();
+        this.isDisposed = false;
         
         const {
             teamId = 0,
@@ -102,60 +191,104 @@ export default class Spaceship extends THREE.Object3D {
     /**
      * 异步加载FBX模型
      */
-    async loadFBXModel() {
-        try {
-            const loader = new FBXLoader();
-            const fbxModel = await loader.loadAsync('/models/futuristic_starship.fbx');
-            
-            // 根据排名调整大小（缩小差距）
-            const rankMultiplier = this.rank <= 3 ? (this.rank === 1 ? 1.3 : this.rank === 2 ? 1.2 : 1.1) : 1.0;
-            const finalSize = this.size * rankMultiplier;
-            
-            // 缩放模型到合适大小
-            fbxModel.scale.setScalar(finalSize * 0.18); // 从0.25减小到0.18，飞船适中
-            
-            // 设置模型材质颜色
-            fbxModel.traverse((child) => {
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = false;
-                    
-                    // 如果模型有材质，调整颜色
-                    if (child.material) {
-                        if (Array.isArray(child.material)) {
-                            child.material.forEach(mat => {
-                                if (mat.color) {
-                                    mat.color.setHSL(this.colorHue / 360, 0.8, 0.6);
-                                }
-                                if (mat.emissive) {
-                                    mat.emissive.setHSL(this.colorHue / 360, 0.3, 0.1);
-                                }
-                            });
-                        } else {
-                            if (child.material.color) {
-                                child.material.color.setHSL(this.colorHue / 360, 0.8, 0.6);
-                            }
-                            if (child.material.emissive) {
-                                child.material.emissive.setHSL(this.colorHue / 360, 0.3, 0.1);
-                            }
-                        }
-                    }
-                }
-            });
-            
-            this.spaceshipMesh = fbxModel;
-        this.add(this.spaceshipMesh);
+    /**
+     * 占位机体：共享 3D 模型要解析 118 万顶点（实测 20~30 秒），
+     * 在此之前先显示一个简易 X 形战机，避免"只有光晕、看不到飞船"。
+     * 模型就绪后会被真实 X-wing 替换掉。
+     */
+    createPlaceholderMesh(finalSize) {
+        const L = finalSize * SHIP_SIZE_FACTOR;
+        const g = new THREE.Group();
+        const mat = new THREE.MeshPhongMaterial({
+            color: new THREE.Color().setHSL(this.colorHue / 360, 0.55, 0.55),
+            specular: new THREE.Color('#cfd8e3'),
+            shininess: 40,
+            side: THREE.DoubleSide,
+        });
+        const body = new THREE.Mesh(new THREE.BoxGeometry(L * 0.16, L * 0.14, L * 0.95), mat);
+        g.add(body);
+        for (const [sx, sy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+            const wing = new THREE.Mesh(new THREE.BoxGeometry(L * 0.42, L * 0.04, L * 0.2), mat);
+            wing.position.set(sx * L * 0.24, sy * L * 0.1, L * 0.04);
+            wing.rotation.z = sx * sy * 0.1;
+            g.add(wing);
+        }
+        return g;
+    }
 
-        // 创建飞船光晕
+    async loadFBXModel() {
+        // 根据排名调整大小（缩小差距）
+        const rankMultiplier = this.rank <= 3 ? (this.rank === 1 ? 1.3 : this.rank === 2 ? 1.2 : 1.1) : 1.0;
+        const finalSize = this.size * rankMultiplier;
+
+        // 外层 wrapper 立即建立：承载每帧朝向动画
+        const wrapper = new THREE.Group();
+        this.spaceshipMesh = wrapper;
+        this.add(wrapper);
+
+        // ① 先挂占位机体 + 光晕（这样飞船一出现就是"看得见的船"）
+        const placeholder = this.createPlaceholderMesh(finalSize);
+        wrapper.add(placeholder);
         this.createGlow(finalSize);
-            
+
+        try {
+            // 全局共享模型：只加载/解析/合并一次，所有飞船复用同一份几何体
+            const proto = await buildSpaceshipPrototype();
+            if (this.isDisposed) return;
+
+            // 尺寸归一化：按包围盒最长边缩放到目标世界尺寸（换任何模型视觉大小一致）
+            const targetLongest = finalSize * SHIP_SIZE_FACTOR;
+            const s = targetLongest / proto.longest;
+
+            // 涂装 + 队伍色：
+            //   顶点色 = 机身白/深色细节（20 艘共享，固定）
+            //   aAccent 蒙版 = 条纹区域 -> 由 uAccent 注入"每队颜色"
+            //   uHullShift = 机身极轻微的色调/明度差异（每队不同，便于一眼分辨）
+            const hue = this.colorHue / 360;
+            const v = ((this.colorHue * 7919) % 100) / 100; // 每队稳定的伪随机 0~1
+            const accentColor = new THREE.Color().setHSL(hue, 0.72, 0.40 + 0.12 * v);
+            const hullShift = new THREE.Color().setHSL(hue, 0.10 + 0.08 * v, 0.98 - 0.06 * v);
+            const material = new THREE.MeshPhongMaterial({
+                color: 0xffffff,
+                vertexColors: true, // 使用烘焙涂装
+                emissive: new THREE.Color().setHSL(hue, 0.45, 0.035),
+                specular: new THREE.Color('#cfd8e3'), // 金属高光
+                shininess: 55,
+                side: THREE.DoubleSide, // 机翼等薄面片：避免单面剔除导致模型"缺面"
+            });
+            material.onBeforeCompile = (shader) => {
+                shader.uniforms.uAccent = { value: accentColor };
+                shader.uniforms.uHullShift = { value: hullShift };
+                shader.vertexShader = shader.vertexShader
+                    .replace('#include <common>', '#include <common>\nattribute float aAccent;\nvarying float vAccent;')
+                    .replace('#include <begin_vertex>', '#include <begin_vertex>\nvAccent = aAccent;');
+                shader.fragmentShader = shader.fragmentShader
+                    .replace('#include <common>', '#include <common>\nuniform vec3 uAccent;\nuniform vec3 uHullShift;\nvarying float vAccent;')
+                    .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb = mix(diffuseColor.rgb * uHullShift, uAccent, vAccent);');
+            };
+            // 所有飞船共用同一份着色器程序（仅 uniform 不同）
+            material.customProgramCacheKey = () => 'xwing-livery-v1';
+
+            const hull = new THREE.Mesh(proto.geometry, material);
+            hull.scale.setScalar(s);
+            hull.position.copy(proto.center).multiplyScalar(-s); // 居中，避免偏心绕轨
+            hull.castShadow = true;
+            hull.receiveShadow = false;
+
+            // ② 模型就绪：换上真机体，移除占位
+            wrapper.add(hull);
+            wrapper.remove(placeholder);
+            placeholder.traverse((o) => { o.geometry?.dispose?.(); o.material?.dispose?.() });
+
             this.modelLoaded = true;
             console.log(`Spaceship model loaded for team ${this.teamName}`);
-            
+
         } catch (error) {
+            if (this.isDisposed) return;
             console.error('Failed to load FBX model:', error);
-            // 如果FBX加载失败，回退到简单的几何体
-            this.createFallbackSpaceship();
+            // 保留占位机体（旧实现"备用模型已删除"会导致这条路径下只剩光晕）
+            console.warn(`Spaceship ${this.teamName}: 模型加载失败，继续使用占位机体`);
+            this.modelLoaded = true;
         }
     }
 
@@ -327,7 +460,10 @@ export default class Spaceship extends THREE.Object3D {
 
         this.rankSprite = new THREE.Sprite(material);
         this.rankSprite.scale.set(this.size * 1.0, this.size * 1.0, 1);
-        this.rankSprite.position.y = this.size * 0.6;
+        // 名次徽标挂到船体下缘（船体放大后，旧偏移会陷进机身里看不见）
+        const shipLength = this.size *
+            (this.rank <= 3 ? (this.rank === 1 ? 1.3 : this.rank === 2 ? 1.2 : 1.1) : 1.0) * SHIP_SIZE_FACTOR;
+        this.rankSprite.position.y = -shipLength * 0.5;
         this.add(this.rankSprite);
     }
     
@@ -339,7 +475,10 @@ export default class Spaceship extends THREE.Object3D {
             ? (this.rank === 1 ? 1.8 : this.rank === 2 ? 1.7 : 1.6) 
             : 1.5;
         const labelScale = rankMultiplier * 11.0; // 10.0 * 1.1 = 11.0，整体增大10%
-        const labelHeight = this.size * rankMultiplier * 7.5;
+        // 标签要抬到船体上方：船体尺寸随 SHIP_SIZE_FACTOR 放大，旧偏移会把标签压进船身
+        const shipLength = this.size *
+            (this.rank <= 3 ? (this.rank === 1 ? 1.3 : this.rank === 2 ? 1.2 : 1.1) : 1.0) * SHIP_SIZE_FACTOR;
+        const labelHeight = this.size * rankMultiplier * 7.5 + shipLength * 0.62;
         
         // 1. 先测量文字实际宽度
         const tempCanvas = document.createElement('canvas');
@@ -599,22 +738,30 @@ export default class Spaceship extends THREE.Object3D {
     
     /**
      * 更新飞船朝向
+     * FACE_EARTH = true  -> 机头始终指向地球球心（飞船"盯着"地球飞）
+     * FACE_EARTH = false -> 旧行为：机头朝轨道切线方向（沿航向前进）
      */
-    updateSpaceshipOrientation(targetX, targetZ) {
+    updateSpaceshipOrientation() {
         if (!this.spaceshipMesh) return;
 
-        // 修复：使用正确的角度计算飞船朝向
+        if (FACE_EARTH) {
+            // 模型机头在局部 -Z（机头 z=-819 / 机尾 z=+271）。
+            // Matrix4.lookAt(eye, target, up) 使物体 +Z = normalize(eye - target)：
+            // 取 eye=飞船位置、target=球心 ⇒ +Z 朝外 ⇒ -Z(机头) 正对地球。
+            _lookM.lookAt(this.position, _origin, _upAxis);
+            this.spaceshipMesh.quaternion.setFromRotationMatrix(_lookM);
+            // 轻微摆动，保留生命感（幅度小，不影响"朝向地球"的观感）
+            this.spaceshipMesh.rotateX(Math.sin(this.verticalPhase) * 0.06);
+            this.spaceshipMesh.rotateZ(Math.cos(this.verticalPhase) * 0.05);
+            return;
+        }
+
+        // ---- 旧行为：朝切线方向 ----
         const currentAngle = this.orbitOffset + this.angle;
         const tangentX = -Math.sin(currentAngle);
         const tangentZ = Math.cos(currentAngle);
-
-        // 计算朝向角度
         const angle = Math.atan2(tangentZ, tangentX);
-
-        // 设置飞船旋转
         this.spaceshipMesh.rotation.y = angle;
-
-        // 添加轻微的俯仰和滚转效果
         this.spaceshipMesh.rotation.x = Math.sin(this.verticalPhase) * 0.1;
         this.spaceshipMesh.rotation.z = Math.cos(this.verticalPhase) * 0.05;
     }
@@ -640,13 +787,10 @@ export default class Spaceship extends THREE.Object3D {
         const overtakeScale = 1 + Math.sin(progress * Math.PI) * 0.15; // 从0.3减少到0.15
         this.scale.setScalar(overtakeScale);
         
-        // 修复：避免过度旋转，保持飞船稳定
+        // 超车时同样保持机头朝向地球，只用轻微滚转表现机动
         if (this.spaceshipMesh) {
-            // 保持飞船基本朝向，只做轻微调整
-            const currentAngle = this.orbitOffset + this.angle;
-            const baseRotation = Math.atan2(-Math.sin(currentAngle), Math.cos(currentAngle));
-            const extraRotation = Math.sin(progress * Math.PI) * 0.3; // 减少额外旋转
-            this.spaceshipMesh.rotation.y = baseRotation + extraRotation;
+            this.updateSpaceshipOrientation();
+            this.spaceshipMesh.rotateZ(Math.sin(progress * Math.PI) * 0.35);
         }
         
         // 超车时的引擎粒子增强
@@ -1086,6 +1230,9 @@ export default class Spaceship extends THREE.Object3D {
      * 清理资源
      */
     dispose() {
+        if (this.isDisposed) return;
+        this.isDisposed = true;
+
         // 清理 Canvas 纹理引用
         if (this.nameTexture) this.nameTexture.dispose();
         if (this.rankTexture) this.rankTexture.dispose();
@@ -1100,7 +1247,8 @@ export default class Spaceship extends THREE.Object3D {
         if (this.particleMaterial) this.particleMaterial.dispose();
 
         this.traverse(child => {
-            if (child.geometry) child.geometry.dispose();
+            // xwing 几何体由所有飞船共享，只能由 SpaceshipManager 统一释放。
+            if (child.geometry && child.geometry !== sharedPrototypeGeometry) child.geometry.dispose();
             if (child.material) {
                 if (Array.isArray(child.material)) {
                     child.material.forEach(mat => mat.dispose());

@@ -1,7 +1,7 @@
 // @ts-nocheck
 import * as THREE from 'three';
 import AttackSystem from "./systems/AttackSystem"
-import Spaceship from './Spaceship';
+import Spaceship, { disposeSpaceshipPrototype } from './Spaceship';
 
 export default class SpaceshipManager extends THREE.Object3D {
     /**
@@ -1999,6 +1999,7 @@ export default class SpaceshipManager extends THREE.Object3D {
     clearSpaceships() {
         // 清理所有飞船
         this.spaceships.forEach(spaceship => {
+            this.remove(spaceship);
             spaceship.dispose();
         });
         this.spaceships.clear();
@@ -2175,5 +2176,7 @@ export default class SpaceshipManager extends THREE.Object3D {
             if (child.geometry) child.geometry.dispose();
             if (child.material) child.material.dispose();
         });
+
+        disposeSpaceshipPrototype();
     }
 }

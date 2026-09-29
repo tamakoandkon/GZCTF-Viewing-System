@@ -96,6 +96,7 @@ npm start
 
 ```bash
 NEXT_PUBLIC_API_BASE_URL=https://your-gzctf-server.com
+GZCTF_API_ORIGIN=http://your-gzctf-server:36306  # 服务端 /api 代理目标（默认 36306）
 ```
 
 ### 默认比赛 ID
