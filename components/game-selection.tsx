@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { CheckCircle, ChevronRight, Clock, Gamepad2, Loader2, Trophy } from "lucide-react"
+import { CheckCircle, ChevronRight, Clock, Gamepad2, Loader2, LogOut, Trophy } from "lucide-react"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import {
   formatGameTime,
   getGamesList,
@@ -15,8 +16,15 @@ import {
   sortGamesByRecent,
   type GameInfo,
 } from "@/services/games-list-service"
+import type { ViewerSessionInfo } from "@/types/viewer-session"
 
-export function GameSelection() {
+interface GameSelectionProps {
+  viewer: ViewerSessionInfo
+  onLogout: () => void
+  loggingOut: boolean
+}
+
+export function GameSelection({ viewer, onLogout, loggingOut }: GameSelectionProps) {
   const router = useRouter()
   const [games, setGames] = useState<GameInfo[]>([])
   const [loading, setLoading] = useState(true)
@@ -44,12 +52,19 @@ export function GameSelection() {
     <div className="w-full max-w-6xl">
       <Card className="border-2 border-primary/20 shadow-2xl backdrop-blur-sm bg-background/95">
         <CardHeader className="border-b border-primary/10">
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-            <Gamepad2 className="w-6 h-6 mr-2 inline-block text-cyan-400" /> 公开观赛
-          </CardTitle>
-          <CardDescription className="text-lg mt-2">
-            无需登录，仅展示公开排名、题目摘要和成功解题动态
-          </CardDescription>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                <Gamepad2 className="w-6 h-6 mr-2 inline-block text-cyan-400" /> 安全观赛
+              </CardTitle>
+              <CardDescription className="text-lg mt-2">
+                {viewer.team.name} · {viewer.userName}；仅展示脱敏排名与成功解题动态
+              </CardDescription>
+            </div>
+            <Button variant="outline" onClick={onLogout} disabled={loggingOut}>
+              <LogOut className="mr-2 h-4 w-4" />退出
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="p-6">
           {loading ? (

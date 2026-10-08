@@ -7,7 +7,7 @@ export type GamesListResponse = GameInfo[]
 export async function getGamesList(): Promise<GamesListResponse> {
   const response = await fetch("/api/public/games", {
     method: "GET",
-    credentials: "omit",
+    credentials: "same-origin",
     cache: "no-store",
     headers: { Accept: "application/json" },
   })

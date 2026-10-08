@@ -2,7 +2,7 @@
 
 > 本文档面向开发者，详细介绍系统架构、核心模块设计、数据流和开发指南。
 
-> 安全边界：浏览器只能访问 `/api/public/*`。禁止恢复管理员登录、把 GZCTF Cookie 带到浏览器，或增加 `/api/:path*` 通配代理。公开字段白名单与部署要求见 [`SECURITY.md`](SECURITY.md)。
+> 安全边界：浏览器使用独立的 HttpOnly 观赛 Cookie；GZCTF Cookie 只保存在服务端会话中。禁止把它带到浏览器、恢复管理员登录或增加 `/api/:path*` 通配代理。字段白名单、单队席位与部署要求见 [`SECURITY.md`](SECURITY.md)。
 
 ---
 
@@ -44,7 +44,7 @@
 │                           │                                  │
 │  ┌────────────────────────┴─────────────────────────────┐   │
 │  │                 Services Layer                         │   │
-│  │      public games | sanitized snapshot | poster        │   │
+│  │ viewer session | games | sanitized snapshot | poster   │   │
 │  └──────────────────────────────────────────────────────┘   │
 │                           │                                  │
 │  ┌────────────────────────┴─────────────────────────────┐   │
@@ -85,7 +85,7 @@
 
 | 路径 | 说明 |
 |------|------|
-| `app/page.tsx` | 公开比赛选择页 |
+| `app/page.tsx` | 队员登录与比赛选择页 |
 | `app/layout.tsx` | 根布局，主题 Provider |
 | `app/login/page.tsx` | 兼容旧链接，重定向到公开首页 |
 | `app/scoreboard/[gameId]/page.tsx` | **核心页面**：记分板 + 3D 竞技场 |
@@ -114,7 +114,7 @@
 | **TopTeamsAbility** | `top-teams-ability.tsx` | TOP3 雷达图 |
 | **CountdownTimer** | `countdown-timer.tsx` | 比赛倒计时 |
 | **CompetitionTitle** | `competition-title.tsx` | 霓虹发光标题 |
-| **AdminLogin** | `admin-login.tsx` | 登录表单 |
+| **ViewerPortal** | `viewer-portal.tsx` | 队员登录、队伍选择与单席位状态 |
 | **SettingsPanel** | `settings-panel.tsx` | 设置面板（GUI 切换等） |
 | **RotationStatus** | `rotation-status.tsx` | 分组轮换进度条 |
 
@@ -821,6 +821,12 @@ useEffect(() => {
 ### 数据流图
 
 ```
+GZCTF 队员登录（Cookie 仅存服务端）
+  │
+  ├─ 精确访问 Profile / Team / Game participation
+  └─→ 每队一个 90 秒可续期观赛席位
+          │
+          ▼
 GZCTF 公开 API（仅由服务端访问）
   │
   ├─ GET /api/game
@@ -841,9 +847,9 @@ GET /api/public/games/{id}/snapshot
 
 ## 5. API 服务层
 
-### 公开 BFF
+### 认证只读 BFF
 
-浏览器使用 `credentials: 'omit'`，只能访问三个白名单端点：
+浏览器使用 `credentials: 'same-origin'` 携带独立的观赛 Cookie，只能访问三个数据白名单端点：
 
 | 服务 | 端点 | 返回内容 |
 |------|------|----------|
@@ -852,6 +858,8 @@ GET /api/public/games/{id}/snapshot
 | 海报 | `GET /api/public/posters/{assetId}` | 校验格式和大小后的图片 |
 
 `lib/gzctf-public.server.ts` 只向上游发送 `Accept: application/json`，不会转发浏览器 Cookie、Authorization 或其他请求头。`lib/public-data.ts` 逐层重建返回对象，未知字段默认丢弃；不得改成透传或对象展开。
+
+登录由 `/api/viewer/session*` 处理。`lib/gzctf-auth.server.ts` 只把服务端保存的 GZCTF Cookie 发送到固定的 Profile、Team、Game participation 和 Logout 路径；`lib/viewer-session.server.ts` 管理每队一个的内存租约。该实现只支持单个 Node.js 进程，多副本部署必须改用 Redis 原子租约。
 
 `app/api/[...path]/route.ts` 对其他 `/api/*` 请求统一返回 404，因此 GZCTF 的登录、题目详情、原始事件、容器等敏感接口无法经观赛平台访问。
 

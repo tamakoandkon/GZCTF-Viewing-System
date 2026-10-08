@@ -21,7 +21,7 @@ interface CacheEntry<T> {
 
 const responseCache = new Map<string, CacheEntry<unknown>>()
 
-function gzctfOrigin(): string {
+export function gzctfOrigin(): string {
   const origin = new URL(process.env.GZCTF_API_ORIGIN || DEFAULT_GZCTF_ORIGIN)
   if (!['http:', 'https:'].includes(origin.protocol) || origin.username || origin.password) {
     throw new Error("Invalid GZCTF_API_ORIGIN")
@@ -29,7 +29,7 @@ function gzctfOrigin(): string {
   return origin.origin
 }
 
-function upstreamUrl(pathname: string): URL {
+export function gzctfUpstreamUrl(pathname: string): URL {
   return new URL(pathname, `${gzctfOrigin()}/`)
 }
 
@@ -49,7 +49,7 @@ async function cached<T>(key: string, loader: () => Promise<T>): Promise<T> {
 }
 
 async function fetchJson(pathname: string): Promise<unknown> {
-  const response = await fetch(upstreamUrl(pathname), {
+  const response = await fetch(gzctfUpstreamUrl(pathname), {
     method: "GET",
     headers: { Accept: "application/json" },
     redirect: "error",
@@ -87,7 +87,7 @@ export async function getPublicGameSnapshot(gameId: number): Promise<PublicGameS
 export async function getPublicPoster(assetId: string): Promise<{ body: ArrayBuffer; contentType: string } | null> {
   if (!isPublicPosterAsset(assetId, await getPublicGames())) return null
 
-  const response = await fetch(upstreamUrl(`/assets/${assetId}/poster`), {
+  const response = await fetch(gzctfUpstreamUrl(`/assets/${assetId}/poster`), {
     method: "GET",
     headers: { Accept: "image/avif,image/webp,image/png,image/jpeg" },
     redirect: "error",

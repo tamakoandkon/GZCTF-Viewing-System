@@ -1,11 +1,25 @@
 import { getPublicGames } from "@/lib/gzctf-public.server"
+import {
+  clearViewerSessionCookie,
+  readViewerSessionId,
+  viewerSessions,
+} from "@/lib/viewer-session.server"
 
-export async function GET() {
+export async function GET(request: Request) {
+  const session = viewerSessions.get(readViewerSessionId(request))
+  if (!session) {
+    return Response.json(
+      { error: "Authentication required" },
+      { status: 401, headers: { "Cache-Control": "no-store", "Set-Cookie": clearViewerSessionCookie() } },
+    )
+  }
+
   try {
     const games = await getPublicGames()
     return Response.json(games, {
       headers: {
-        "Cache-Control": "public, max-age=5, stale-while-revalidate=10",
+        "Cache-Control": "private, no-store",
+        Vary: "Cookie",
         "X-Content-Type-Options": "nosniff",
       },
     })

@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { useParams } from "next/navigation"
-import { getPublicGameSnapshot } from "@/services/api"
+import { useParams, useRouter } from "next/navigation"
+import { getPublicGameSnapshot, ViewerApiError } from "@/services/api"
 import type { ScoreboardResponse } from "@/types/scoreboard"
 import type { EventsResponse } from "@/types/events"
 import type { PublicGame } from "@/types/game"
@@ -19,12 +19,14 @@ import { CompetitionTitle } from "@/components/competition-title"
 
 export default function ScoreboardPage() {
   const { gameId } = useParams() as { gameId: string }
+  const router = useRouter()
   const [scoreboard, setScoreboard] = useState<ScoreboardResponse | null>(null)
   const [events, setEvents] = useState<EventsResponse>([])
   const [game, setGame] = useState<PublicGame | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const hasDataRef = useRef(false)
+  const requestInFlightRef = useRef(false)
   const [currentGroupIndex, setCurrentGroupIndex] = useState(0)
   const [isGUIVisible, setIsGUIVisible] = useState(false)
   const totalGroups = Math.ceil((scoreboard?.items.length ?? 0) / 10)
@@ -33,6 +35,8 @@ export default function ScoreboardPage() {
 
   useEffect(() => {
     async function fetchData() {
+      if (requestInFlightRef.current) return
+      requestInFlightRef.current = true
       try {
         setError(null)
         const snapshot = await getPublicGameSnapshot(gameId)
@@ -43,12 +47,21 @@ export default function ScoreboardPage() {
         setError(null)
       } catch (err) {
         console.error("Failed to fetch data:", err)
-        if (hasDataRef.current) {
+        if (err instanceof ViewerApiError && err.status === 401) {
+          router.replace("/")
+          return
+        }
+        if (err instanceof ViewerApiError && err.status === 403) {
+          setError("当前登录队伍没有参加这场比赛")
+        } else if (err instanceof ViewerApiError && err.status === 429) {
+          setError("刷新过于频繁，请稍后重试")
+        } else if (hasDataRef.current) {
           setError("后端暂不可用，已显示缓存数据")
         } else {
           setError("系统连接失败，请稍后重试")
         }
       } finally {
+        requestInFlightRef.current = false
         setLoading(false)
       }
     }
@@ -58,7 +71,7 @@ export default function ScoreboardPage() {
       const intervalId = setInterval(fetchData, 15000)
       return () => clearInterval(intervalId)
     }
-  }, [gameId])
+  }, [gameId, router])
 
   // Rotate ranking groups while more than one group is available.
   useEffect(() => {
