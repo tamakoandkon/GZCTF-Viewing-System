@@ -9,7 +9,7 @@ import { chromium } from "playwright"
 const here = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(here, "..", "..")
 const outDir = path.join(rootDir, "reports", "screenshots")
-const url = process.env.SCREENSHOT_URL || "http://localhost:3000"
+const url = process.env.SCREENSHOT_URL || "http://localhost:3000/scoreboard/3"
 const useRealApi = process.env.USE_REAL_API === "1"
 
 // 可移植：如需指定本地 chromium，用环境变量 CHROME_PATH
@@ -34,20 +34,6 @@ const context = await browser.newContext({
   deviceScaleFactor: 1,
 })
 
-if (!useRealApi) {
-  await context.addInitScript(() => {
-    localStorage.setItem(
-      "gzctf-viewer-auth",
-      JSON.stringify({
-        userName: "cosmic-check",
-        name: "cosmic-check",
-        email: "",
-        role: "admin",
-      }),
-    )
-  })
-}
-
 const page = await context.newPage()
 
 if (!useRealApi) {
@@ -58,11 +44,6 @@ if (!useRealApi) {
     { id: 3, name: "Charlie", score: 600, rank: 3 },
   ].map((team) => ({
     ...team,
-    bio: null,
-    division: null,
-    avatar: null,
-    divisionRank: null,
-    lastSubmissionTime: now,
     solvedChallenges: [],
     solvedCount: 0,
   }))
@@ -70,18 +51,8 @@ if (!useRealApi) {
     id: 3,
     title: "Cosmic background check",
     summary: "Headless verification fixture",
-    content: "",
-    hidden: false,
-    divisions: null,
-    inviteCodeRequired: false,
-    writeupRequired: false,
     poster: null,
     limit: 0,
-    teamCount: teams.length,
-    division: null,
-    teamName: null,
-    practiceMode: false,
-    status: "Accepted",
     start: now - 3600000,
     end: now + 3600000,
   }
@@ -90,21 +61,17 @@ if (!useRealApi) {
     const pathname = new URL(route.request().url()).pathname
     let json
 
-    if (/\/api\/game\/[^/]+\/scoreboard$/.test(pathname)) {
+    if (/\/api\/public\/games\/[^/]+\/snapshot$/.test(pathname)) {
       json = {
-        updateTimeUtc: now,
-        bloodBonus: 0,
-        timeLines: {},
-        items: teams,
-        challenges: {},
-        challengeCount: 0,
+        game,
+        scoreboard: {
+          updateTimeUtc: now,
+          items: teams,
+          challenges: {},
+          challengeCount: 0,
+        },
+        events: [],
       }
-    } else if (/\/api\/game\/[^/]+\/events$/.test(pathname)) {
-      json = []
-    } else if (/\/api\/game\/[^/]+\/details$/.test(pathname)) {
-      json = { ...game, challenges: {} }
-    } else if (/\/api\/game\/[^/]+$/.test(pathname)) {
-      json = game
     } else {
       await route.fulfill({ status: 404, json: { error: "Unmocked API route" } })
       return
@@ -124,7 +91,7 @@ page.on("pageerror", (err) => {
 
 await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 })
 
-// Settle app redirect (e.g. / -> /scoreboard/3)
+// Allow the public scoreboard page to settle.
 await page.waitForTimeout(1500)
 
 // Wait 10 seconds: React mount + 3D scene and texture initialization.

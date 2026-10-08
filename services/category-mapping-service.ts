@@ -1,5 +1,4 @@
-import type { ChallengeCategory } from "@/types/scoreboard"
-import type { GameDetails } from "@/types/challenge"
+import type { ChallengeCategory, ScoreboardResponse } from "@/types/scoreboard"
 
 // 国家坐标数据（经纬度）
 interface CountryCoordinates {
@@ -85,14 +84,20 @@ const categoryCountryMapping: Record<ChallengeCategory, CategoryMapping> = {
   'Misc': { country: 'Mongolia', color: '#ff7675', highlightIntensity: 0.6 }, // Mongolia (75顶点)
 }
 
-// 从游戏数据中获取实际存在的category
-export function getActiveCategoriesFromGame(gameDetails: GameDetails): ChallengeCategory[] {
-  return Object.keys(gameDetails.challenges) as ChallengeCategory[]
+// 从公开记分板中获取实际存在的 category。
+export function getActiveCategoriesFromChallenges(
+  challenges: ScoreboardResponse["challenges"],
+): ChallengeCategory[] {
+  return (Object.keys(challenges) as ChallengeCategory[]).filter(
+    (category) => challenges[category].length > 0,
+  )
 }
 
 // 获取游戏中的category到国家的映射
-export function getGameCategoryMappings(gameDetails: GameDetails): Record<ChallengeCategory, CategoryMapping> {
-  const activeCategories = getActiveCategoriesFromGame(gameDetails)
+export function getGameCategoryMappings(
+  challenges: ScoreboardResponse["challenges"],
+): Partial<Record<ChallengeCategory, CategoryMapping>> {
+  const activeCategories = getActiveCategoriesFromChallenges(challenges)
   const mappings: Record<ChallengeCategory, CategoryMapping> = {} as any
   
   activeCategories.forEach(category => {

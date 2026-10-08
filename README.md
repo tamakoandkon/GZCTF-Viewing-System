@@ -10,16 +10,16 @@
 
 ```shell
 # 安装依赖
-npm install
+pnpm install
 
 # 启动开发服务器
-npm run dev
+pnpm dev
 
 # 构建生产版本
-npm run build
+pnpm build
 
 # 启动生产服务
-npm start
+pnpm start
 ```
 
 ---
@@ -58,14 +58,17 @@ npm start
 
 ### 📊 实时数据面板
 - **Team Rankings**：分组轮换显示（每组 10 队，15 秒切换）
-- **Events Feed**：实时事件流，展示 Flag 提交动态
+- **Events Feed**：从公开记分板派生成功解题动态，不读取原始 Flag 提交
 - **Top Teams Ability**：前三名能力雷达图
 - **Countdown Timer**：比赛倒计时
 
-### 🔐 GZCTF 认证集成
-- 基于 Cookie 的自动认证
-- 页面级认证保护，未登录自动跳转
-- 24 小时自动过期
+### 🔐 队伍单席位与只读数据边界
+- 使用 GZCTF 队员账号登录，每支队伍同时只允许一个活跃观赛会话
+- GZCTF 身份 Cookie 只保存在观赛服务内存中；浏览器只接收独立的 HttpOnly 观赛 Cookie
+- 仅开放经过认证的比赛列表、脱敏记分板和受控海报三个 GET 接口
+- 成功解题动态由公开记分板生成，不抓取原始事件或 Flag
+- 未列入白名单的 `/api/*` 路径统一返回 `404`
+- 关闭页面后观赛席位最多约 90 秒自动释放；快照请求限制为每会话全局 10 秒一次
 
 ### 🎨 UI/UX
 - **深空主题**：玻璃态面板、霓虹发光效果
@@ -78,8 +81,8 @@ npm start
 
 | 类别 | 技术 |
 |------|------|
-| **框架** | Next.js 14（App Router） |
-| **渲染** | React 18 |
+| **框架** | Next.js 16（App Router） |
+| **渲染** | React 19 |
 | **3D 引擎** | Three.js 0.169 |
 | **后期处理** | postprocessing |
 | **动画** | GSAP 3.12 |
@@ -95,25 +98,17 @@ npm start
 ### 环境变量
 
 ```bash
-NEXT_PUBLIC_API_BASE_URL=https://your-gzctf-server.com
-GZCTF_API_ORIGIN=http://your-gzctf-server:36306  # 服务端 /api 代理目标（默认 36306）
+GZCTF_API_ORIGIN=http://127.0.0.1:36306
 ```
 
-### 默认比赛 ID
-
-修改 `app/page.tsx` 中的重定向目标：
-
-```tsx
-redirect("/scoreboard/9")  // 改为你的比赛 ID
-```
+GZCTF 应只监听环回地址或私有网络；本项目只接受参赛队员在登录页临时提交的凭据，禁止配置或使用管理员凭据。完整部署要求见 [SECURITY.md](./SECURITY.md)。
 
 ---
 
 ## 🎮 使用指南
 
-1. 访问系统首页 → 自动跳转到计分板页面
-2. 若未登录，跳转到登录页，输入 GZCTF 管理员账号
-3. 登录成功后进入观赛主页面：
+1. 使用 GZCTF 队员账号登录并领取所属队伍的观赛席位
+2. 选择该队伍参加的比赛后进入观赛主页面：
    - **中央**：3D 地球场景，飞船实时显示各队伍排名
    - **左侧**：分组轮换排名列表
    - **右侧**：事件流 + TOP3 能力面板

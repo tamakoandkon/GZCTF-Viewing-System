@@ -2,6 +2,8 @@
 
 > 本文档面向开发者，详细介绍系统架构、核心模块设计、数据流和开发指南。
 
+> 安全边界：浏览器使用独立的 HttpOnly 观赛 Cookie；GZCTF Cookie 只保存在服务端会话中。禁止把它带到浏览器、恢复管理员登录或增加 `/api/:path*` 通配代理。字段白名单、单队席位与部署要求见 [`SECURITY.md`](SECURITY.md)。
+
 ---
 
 ## 目录
@@ -42,7 +44,7 @@
 │                           │                                  │
 │  ┌────────────────────────┴─────────────────────────────┐   │
 │  │                 Services Layer                         │   │
-│  │  auth-service | scoreboard | events | game | challenge │   │
+│  │ viewer session | games | sanitized snapshot | poster   │   │
 │  └──────────────────────────────────────────────────────┘   │
 │                           │                                  │
 │  ┌────────────────────────┴─────────────────────────────┐   │
@@ -61,7 +63,7 @@
                            ▼
               ┌─────────────────────────┐
               │    GZCTF Backend API     │
-              │  (via Next.js Rewrites)  │
+              │ (allowlisted server BFF) │
               └─────────────────────────┘
 ```
 
@@ -71,7 +73,7 @@
 |------|------|------|
 | **页面层** | Next.js App Router | 路由、布局、数据获取 |
 | **组件层** | React + TypeScript | UI 组件、状态管理 |
-| **服务层** | TypeScript fetch API | 数据获取、认证、转换 |
+| **服务层** | Route Handlers + TypeScript fetch API | 服务端取数、字段白名单脱敏、转换 |
 | **3D 引擎层** | Three.js + postprocessing | 场景渲染、特效、动画 |
 | **系统工具层** | JS utilities | GUI、性能、交互 |
 
@@ -83,9 +85,9 @@
 
 | 路径 | 说明 |
 |------|------|
-| `app/page.tsx` | 首页，重定向到默认比赛记分板 |
+| `app/page.tsx` | 队员登录与比赛选择页 |
 | `app/layout.tsx` | 根布局，主题 Provider |
-| `app/login/page.tsx` | 管理员登录页 |
+| `app/login/page.tsx` | 兼容旧链接，重定向到公开首页 |
 | `app/scoreboard/[gameId]/page.tsx` | **核心页面**：记分板 + 3D 竞技场 |
 | `app/design/` | 设计预览页（标题 Demo、发光画廊） |
 
@@ -112,7 +114,7 @@
 | **TopTeamsAbility** | `top-teams-ability.tsx` | TOP3 雷达图 |
 | **CountdownTimer** | `countdown-timer.tsx` | 比赛倒计时 |
 | **CompetitionTitle** | `competition-title.tsx` | 霓虹发光标题 |
-| **AdminLogin** | `admin-login.tsx` | 登录表单 |
+| **ViewerPortal** | `viewer-portal.tsx` | 队员登录、队伍选择与单席位状态 |
 | **SettingsPanel** | `settings-panel.tsx` | 设置面板（GUI 切换等） |
 | **RotationStatus** | `rotation-status.tsx` | 分组轮换进度条 |
 
@@ -819,88 +821,47 @@ useEffect(() => {
 ### 数据流图
 
 ```
-GZCTF API
+GZCTF 队员登录（Cookie 仅存服务端）
   │
-  ├─ GET /api/game/{id}/scoreboard
-  │   └─→ { items: [{ rank, name, score, ... }] }
-  │       └─→ allTeams / currentGroupTeams
-  │           ├─→ TeamRankings (UI)
-  │           ├─→ TopTeamsAbility (UI)
-  │           └─→ SpaceshipManager (3D)
+  ├─ 精确访问 Profile / Team / Game participation
+  └─→ 每队一个 90 秒可续期观赛席位
+          │
+          ▼
+GZCTF 公开 API（仅由服务端访问）
   │
-  ├─ GET /api/game/{id}/events
-  │   └─→ [{ type, teamName, challengeCategory, ... }]
-  │       ├─→ EventsFeed (UI)
-  │       └─→ Attack Trigger (3D)
-  │
-  ├─ GET /api/game/{id}
-  │   └─→ { title, start, end, ... }
-  │       ├─→ CompetitionTitle
-  │       └─→ CountdownTimer
-  │
-  └─ GET /api/game/{id}/details
-      └─→ { challenges: [...] }
-          └─→ categoryMappings
+  ├─ GET /api/game
+  └─ GET /api/game/{id}/scoreboard
+          │
+          ▼
+显式字段白名单 + Zod 校验 + 事件派生
+          │
+          ▼
+GET /api/public/games/{id}/snapshot
+          │
+          ├─→ TeamRankings / TopTeamsAbility
+          ├─→ EventsFeed（只含成功解题事件）
+          └─→ SpaceshipManager / CompetitionTitle
 ```
 
 ---
 
 ## 5. API 服务层
 
-### 认证服务 (auth-service.ts)
+### 认证只读 BFF
 
-```typescript
-// GZCTF Cookie-based 认证
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
+浏览器使用 `credentials: 'same-origin'` 携带独立的观赛 Cookie，只能访问三个数据白名单端点：
 
-export async function login(credentials: LoginCredentials) {
-    const response = await fetch(`${BASE_URL}/api/account/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',  // 关键：接收服务器 Cookie
-        body: JSON.stringify(credentials)
-    })
-    // 保存状态到 localStorage
-}
+| 服务 | 端点 | 返回内容 |
+|------|------|----------|
+| 比赛列表 | `GET /api/public/games` | 公开比赛基本信息 |
+| 观赛快照 | `GET /api/public/games/{id}/snapshot` | 比赛、排行榜、公开题目摘要、派生解题事件 |
+| 海报 | `GET /api/public/posters/{assetId}` | 校验格式和大小后的图片 |
 
-export async function authenticatedFetch(url: string, options = {}) {
-    const response = await fetch(url, {
-        ...options,
-        credentials: 'include',  // 自动发送 Cookie
-    })
+`lib/gzctf-public.server.ts` 只向上游发送 `Accept: application/json`，不会转发浏览器 Cookie、Authorization 或其他请求头。`lib/public-data.ts` 逐层重建返回对象，未知字段默认丢弃；不得改成透传或对象展开。
 
-    if (response.status === 401) {
-        clearAuth()
-        window.dispatchEvent(new CustomEvent('auth:unauthorized'))
-    }
+登录由 `/api/viewer/session*` 处理。`lib/gzctf-auth.server.ts` 只把服务端保存的 GZCTF Cookie 发送到固定的 Profile、Team、Game participation 和 Logout 路径；`lib/viewer-session.server.ts` 管理每队一个的内存租约。该实现只支持单个 Node.js 进程，多副本部署必须改用 Redis 原子租约。
 
-    return response
-}
-```
-
-### 数据服务
-
-所有数据服务均使用 `authenticatedFetch` 进行请求，自动携带 GZCTF Cookie：
-
-| 服务 | 文件 | 端点 | 轮询间隔 |
-|------|------|------|----------|
-| scoreboard | `scoreboard-service.ts` | `/api/game/{id}/scoreboard` | 15s |
-| events | `events-service.ts` | `/api/game/{id}/events` | 15s |
-| game | `game-service.ts` | `/api/game/{id}` | 15s |
-| challenge | `challenge-service.ts` | `/api/game/{id}/details` | 15s |
-
-### Next.js API 代理
-
-`next.config.mjs` 配置代理：
-
-```javascript
-async rewrites() {
-    return [{
-        source: '/api/:path*',
-        destination: 'http://your-gzctf-server:36306/api/:path*',
-    }]
-}
-```
+`app/api/[...path]/route.ts` 对其他 `/api/*` 请求统一返回 404，因此 GZCTF 的登录、题目详情、原始事件、容器等敏感接口无法经观赛平台访问。
 
 ---
 
