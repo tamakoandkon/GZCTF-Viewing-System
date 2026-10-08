@@ -2,21 +2,20 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Rocket } from "lucide-react"
-import type { GameEvent } from "@/types/events"
-import type { TeamInfo } from "@/types/scoreboard"
-import type { GameDetails } from "@/types/challenge"
+import type { PublicSolveEvent } from "@/types/events"
+import type { ScoreboardResponse, TeamInfo } from "@/types/scoreboard"
 import { useTheme } from "@/contexts/theme-context"
 import { getGameCategoryMappings, getCategoryTargetInfo } from "@/services/category-mapping-service"
 import { useDeviceCapabilities } from "@/hooks/useDeviceCapabilities"
 
 interface InteractiveArenaProps {
-  events: GameEvent[]
+  events: PublicSolveEvent[]
   teams: TeamInfo[]
-  gameDetails: GameDetails | null
+  challenges: ScoreboardResponse["challenges"]
   allTeams?: TeamInfo[]
 }
 
-export function InteractiveArena({ events, teams, gameDetails, allTeams }: InteractiveArenaProps) {
+export function InteractiveArena({ events, teams, challenges, allTeams }: InteractiveArenaProps) {
   const globeInitedRef = useRef<boolean>(false)
   const globeControllerRef = useRef<{
     dispose: () => void
@@ -35,8 +34,8 @@ export function InteractiveArena({ events, teams, gameDetails, allTeams }: Inter
 
   // 处理游戏数据中的category映射
   useEffect(() => {
-    if (gameDetails && isInitialized) {
-      const mappings = getGameCategoryMappings(gameDetails)
+    if (isInitialized) {
+      const mappings = getGameCategoryMappings(challenges)
 
       // 延迟高亮对应的国家，确保地球完全加载
       const timer = window.setTimeout(() => {
@@ -67,7 +66,7 @@ export function InteractiveArena({ events, teams, gameDetails, allTeams }: Inter
 
       return () => window.clearTimeout(timer)
     }
-  }, [gameDetails, isInitialized])
+  }, [challenges, isInitialized])
 
   // 处理事件和攻击动画 - 使用allTeams确保所有队伍都能参与攻击
   useEffect(() => {
@@ -76,39 +75,27 @@ export function InteractiveArena({ events, teams, gameDetails, allTeams }: Inter
       const spaceshipManager = globeControllerRef.current.getSpaceshipManager()
       if (!spaceshipManager) return
 
-      const flagEvents = events.filter((event) => event.type === "FlagSubmit" && event.team && event.values.length > 0)
-      const sortedEvents = [...flagEvents].sort((a, b) => b.time - a.time)
+      const sortedEvents = [...events].sort((a, b) => b.time - a.time)
       const newEvents = sortedEvents.filter((event) => event.time > lastEventTimeRef.current)
 
       if (newEvents.length > 0) {
         newEvents.forEach((event) => {
-          const teamName = event.team || ""
+          const teamName = event.team
           const team = teamsToSearch.find((t) => t.name === teamName)
 
           if (team) {
-            const isSuccess = event.values[0] === "Accepted"
-            const challengeTitle = event.values.length > 2 ? event.values[2] : "Unknown challenge"
-
-            let challengeCategory = "Misc"
-            if (gameDetails) {
-              for (const [category, challenges] of Object.entries(gameDetails.challenges)) {
-                const challenge = challenges.find((c) => c.title === challengeTitle)
-                if (challenge) {
-                  challengeCategory = category
-                  break
-                }
-              }
-            }
+            const challengeTitle = event.challengeTitle
+            const challengeCategory = event.challengeCategory
 
             // 获取目标国家
-            const targetInfo = getCategoryTargetInfo(challengeCategory as any)
+            const targetInfo = getCategoryTargetInfo(challengeCategory)
             const targetCountry = targetInfo.country?.name || 'China' // 默认目标
             
             // 创建攻击动画
             spaceshipManager.createAttack(team.id, targetCountry, {
               challengeCategory,
               challengeTitle,
-              isSuccess,
+              isSuccess: true,
             })
           }
         })
@@ -116,7 +103,7 @@ export function InteractiveArena({ events, teams, gameDetails, allTeams }: Inter
         lastEventTimeRef.current = newEvents[0].time
       }
     }
-  }, [events, allTeams, teams, gameDetails])
+  }, [events, allTeams, teams])
 
   // 初始化 Three.js 地球
   useEffect(() => {

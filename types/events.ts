@@ -1,11 +1,19 @@
-export type EventType = "Normal" | "ContainerStart" | "ContainerDestroy" | "FlagSubmit" | "CheatDetected"
+import type { BloodType, ChallengeCategory } from "@/types/scoreboard"
 
-export interface GameEvent {
-  type: EventType
-  values: string[]
+/**
+ * Public events are derived from the public scoreboard. They intentionally do
+ * not model raw GZCTF event values, submitted flags, containers, or users.
+ */
+export interface PublicSolveEvent {
+  type: "Solve"
+  teamId: number
+  team: string
+  challengeId: number
+  challengeTitle: string
+  challengeCategory: ChallengeCategory
+  score: number
+  bloodType: BloodType
   time: number
-  user?: string
-  team?: string
 }
 
-export type EventsResponse = GameEvent[]
+export type EventsResponse = PublicSolveEvent[]

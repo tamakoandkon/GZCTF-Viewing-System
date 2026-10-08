@@ -10,16 +10,16 @@
 
 ```shell
 # 安装依赖
-npm install
+pnpm install
 
 # 启动开发服务器
-npm run dev
+pnpm dev
 
 # 构建生产版本
-npm run build
+pnpm build
 
 # 启动生产服务
-npm start
+pnpm start
 ```
 
 ---
@@ -62,10 +62,11 @@ npm start
 - **Top Teams Ability**：前三名能力雷达图
 - **Countdown Timer**：比赛倒计时
 
-### 🔐 GZCTF 认证集成
-- 基于 Cookie 的自动认证
-- 页面级认证保护，未登录自动跳转
-- 24 小时自动过期
+### 🔐 公开只读数据边界
+- 无需登录即可观赛，浏览器不会接触 GZCTF 管理员会话
+- 仅开放比赛列表、脱敏记分板和受控海报三个 GET 接口
+- 成功解题动态由公开记分板生成，不抓取原始事件或 Flag
+- 未列入白名单的 `/api/*` 路径统一返回 `404`
 
 ### 🎨 UI/UX
 - **深空主题**：玻璃态面板、霓虹发光效果
@@ -78,8 +79,8 @@ npm start
 
 | 类别 | 技术 |
 |------|------|
-| **框架** | Next.js 14（App Router） |
-| **渲染** | React 18 |
+| **框架** | Next.js 16（App Router） |
+| **渲染** | React 19 |
 | **3D 引擎** | Three.js 0.169 |
 | **后期处理** | postprocessing |
 | **动画** | GSAP 3.12 |
@@ -95,25 +96,17 @@ npm start
 ### 环境变量
 
 ```bash
-NEXT_PUBLIC_API_BASE_URL=https://your-gzctf-server.com
-GZCTF_API_ORIGIN=http://your-gzctf-server:36306  # 服务端 /api 代理目标（默认 36306）
+GZCTF_API_ORIGIN=http://127.0.0.1:36306
 ```
 
-### 默认比赛 ID
-
-修改 `app/page.tsx` 中的重定向目标：
-
-```tsx
-redirect("/scoreboard/9")  // 改为你的比赛 ID
-```
+GZCTF 应只监听环回地址或私有网络；不要把管理员凭据配置到本项目中。完整部署要求见 [SECURITY.md](./SECURITY.md)。
 
 ---
 
 ## 🎮 使用指南
 
-1. 访问系统首页 → 自动跳转到计分板页面
-2. 若未登录，跳转到登录页，输入 GZCTF 管理员账号
-3. 登录成功后进入观赛主页面：
+1. 访问系统首页，无需登录即可选择公开比赛
+2. 选择比赛后进入观赛主页面：
    - **中央**：3D 地球场景，飞船实时显示各队伍排名
    - **左侧**：分组轮换排名列表
    - **右侧**：事件流 + TOP3 能力面板

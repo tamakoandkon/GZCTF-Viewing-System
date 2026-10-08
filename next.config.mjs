@@ -7,12 +7,18 @@ const nextConfig = {
     unoptimized: true,
   },
 
-  async rewrites() {
+  async headers() {
     return [
       {
-        source: '/api/:path*',
-        // 保留现有部署端口，同时允许通过环境变量覆盖后端地址。
-        destination: `${process.env.GZCTF_API_ORIGIN || 'http://localhost:36306'}/api/:path*`,
+        source: '/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+          { key: 'Content-Security-Policy', value: "base-uri 'self'; frame-ancestors 'none'; object-src 'none'" },
+        ],
       },
     ];
   },

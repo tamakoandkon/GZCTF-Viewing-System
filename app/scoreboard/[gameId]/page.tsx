@@ -1,13 +1,11 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { getScoreboard, getEvents, getGameDetail, getGameDetails } from "@/services/api"
-import { isAuthenticated } from "@/services/auth-service"
+import { useParams } from "next/navigation"
+import { getPublicGameSnapshot } from "@/services/api"
 import type { ScoreboardResponse } from "@/types/scoreboard"
 import type { EventsResponse } from "@/types/events"
-import type { GameDetail } from "@/types/game"
-import type { GameDetails } from "@/types/challenge"
+import type { PublicGame } from "@/types/game"
 import { TeamRankings } from "@/components/team-rankings"
 import { EventsFeed } from "@/components/events-feed"
 import { TopTeamsAbility } from "@/components/top-teams-ability"
@@ -21,11 +19,9 @@ import { CompetitionTitle } from "@/components/competition-title"
 
 export default function ScoreboardPage() {
   const { gameId } = useParams() as { gameId: string }
-  const router = useRouter()
   const [scoreboard, setScoreboard] = useState<ScoreboardResponse | null>(null)
   const [events, setEvents] = useState<EventsResponse>([])
-  const [gameDetail, setGameDetail] = useState<GameDetail | null>(null)
-  const [gameDetails, setGameDetails] = useState<GameDetails | null>(null)
+  const [game, setGame] = useState<PublicGame | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const hasDataRef = useRef(false)
@@ -35,39 +31,14 @@ export default function ScoreboardPage() {
   const isRotating = totalGroups > 1
   const activeGroupIndex = totalGroups > 0 ? currentGroupIndex % totalGroups : 0
 
-  // 认证检查
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      // 未登录，跳转到登录页面
-      router.push('/login')
-      return
-    }
-    
-    // 监听认证失败事件
-    const handleUnauthorized = () => {
-      router.push('/login')
-    }
-    
-    window.addEventListener('auth:unauthorized', handleUnauthorized)
-    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized)
-  }, [router])
-
   useEffect(() => {
     async function fetchData() {
-      if (!isAuthenticated()) return
-
       try {
         setError(null)
-        const [scoreboardData, eventsData, gameDetailData, gameDetailsData] = await Promise.all([
-          getScoreboard(gameId),
-          getEvents(gameId),
-          getGameDetail(gameId),
-          getGameDetails(gameId),
-        ])
-        setScoreboard(scoreboardData)
-        setEvents(eventsData)
-        setGameDetail(gameDetailData)
-        setGameDetails(gameDetailsData)
+        const snapshot = await getPublicGameSnapshot(gameId)
+        setScoreboard(snapshot.scoreboard)
+        setEvents(snapshot.events)
+        setGame(snapshot.game)
         hasDataRef.current = true
         setError(null)
       } catch (err) {
@@ -149,7 +120,7 @@ export default function ScoreboardPage() {
     )
   }
 
-  if (!scoreboard || !gameDetail || !gameDetails) {
+  if (!scoreboard || !game) {
     return (
       <div className="min-h-screen deep-space-bg flex items-center justify-center">
         <div className="text-center">
@@ -185,7 +156,7 @@ export default function ScoreboardPage() {
           </div>
 
           <div className="order-1 lg:order-2 flex items-center justify-center py-1 lg:py-0">
-            <CompetitionTitle title={gameDetail.title} />
+            <CompetitionTitle title={game.title} />
           </div>
 
           <div className="order-3 flex flex-col lg:flex-row items-center justify-center lg:justify-end gap-2 lg:gap-4">
@@ -193,7 +164,7 @@ export default function ScoreboardPage() {
               <SettingsPanel onToggleGUI={() => setIsGUIVisible(!isGUIVisible)} isGUIVisible={isGUIVisible} />
             </div>
             <div className="w-full lg:w-64">
-              <CountdownTimer endTimeUtc={gameDetail.end} startTimeUtc={gameDetail.start} />
+              <CountdownTimer endTimeUtc={game.end} startTimeUtc={game.start} />
             </div>
           </div>
         </div>
@@ -226,7 +197,7 @@ export default function ScoreboardPage() {
             <InteractiveArena
               events={events || []}
               teams={currentGroupTeams}
-              gameDetails={gameDetails}
+              challenges={scoreboard.challenges}
               allTeams={scoreboard.items || []}
             />
 
