@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">Viewing Room 观赛中心标识</title>
+  <rect width="128" height="128" rx="28" fill="#162b5a"/>
+  <path d="M34 91V36h60v55" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="square" stroke-linejoin="round"/>
+  <path d="m47 58 17 23 17-23" fill="none" stroke="#ffbd79" stroke-width="8" stroke-linecap="square" stroke-linejoin="round"/>
+</svg>

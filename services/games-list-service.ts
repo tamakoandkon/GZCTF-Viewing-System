@@ -38,8 +38,23 @@ export function sortGamesByRecent(games: GamesListResponse): GamesListResponse {
   return [...games].sort((a, b) => b.start - a.start)
 }
 
+export function sortGamesForViewing(games: GamesListResponse): GamesListResponse {
+  const now = Date.now()
+  const priority = { active: 0, upcoming: 1, ended: 2 }
+  return [...games].sort((a, b) => {
+    const statusA = getGameStatus(a, now)
+    const statusB = getGameStatus(b, now)
+    if (statusA !== statusB) return priority[statusA] - priority[statusB]
+    if (statusA === "active") return a.end - b.end
+    if (statusA === "upcoming") return a.start - b.start
+    return b.end - a.end
+  })
+}
+
 export function formatGameTime(timestamp: number): string {
-  return new Date(timestamp).toLocaleString("zh-CN", {
+  const date = new Date(timestamp)
+  if (Number.isNaN(date.getTime())) return "时间待定"
+  return date.toLocaleString("zh-CN", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -48,8 +63,7 @@ export function formatGameTime(timestamp: number): string {
   })
 }
 
-export function getGameStatus(game: GameInfo): "active" | "upcoming" | "ended" {
-  const now = Date.now()
+export function getGameStatus(game: GameInfo, now = Date.now()): "active" | "upcoming" | "ended" {
   if (game.start <= now && game.end >= now) return "active"
   if (game.start > now) return "upcoming"
   return "ended"
