@@ -124,12 +124,12 @@ export function ViewerPortal() {
     <main className={styles.page}>
       <div className={styles.pageInner}>
         <header className={styles.siteHeader}>
-          <div className={styles.brand} aria-label="GZCTF 观赛中心">
+          <div className={styles.brand} aria-label="Viewing Room 观赛中心">
             <span className={styles.brandMark} aria-hidden="true">
-              <Image src="/gzctf-viewing-mark.svg" width={38} height={38} alt="" />
+              <Image src="/viewing-room-mark.svg" width={38} height={38} alt="" />
             </span>
             <span>
-              <span className={styles.brandName}>GZCTF</span>
+              <span className={styles.brandName}>VIEWING ROOM</span>
               <span className={styles.brandDivider} aria-hidden="true" />
               <span className={styles.brandSuffix}>观赛中心</span>
             </span>
@@ -165,7 +165,7 @@ export function ViewerPortal() {
                 <div className={styles.orbitMiddle} />
                 <div className={styles.orbitInner} />
                 <div className={styles.orbitCore}>
-                  <Image src="/gzctf-viewing-mark.svg" width={104} height={104} alt="" />
+                  <Image src="/viewing-room-mark.svg" width={104} height={104} alt="" />
                 </div>
                 <span className={styles.orbitPointOne} />
                 <span className={styles.orbitPointTwo} />

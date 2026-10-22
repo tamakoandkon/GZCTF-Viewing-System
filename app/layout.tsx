@@ -6,10 +6,10 @@ import './globals.css'
 import '../style.css'
 
 export const metadata: Metadata = {
-  title: 'CTF 竞技场 - 3D可视化',
-  description: 'GZCTF比赛数据3D可视化展示',
+  title: 'Viewing Room | CTF 观赛中心',
+  description: '独立的 CTF 赛事实时可视化观赛系统',
   generator: 'v0.app',
-  icons: { icon: '/gzctf-viewing-mark.svg' },
+  icons: { icon: '/viewing-room-mark.svg' },
 }
 
 export default function RootLayout({
