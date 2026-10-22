@@ -1,0 +1,1212 @@
+.page {
+  min-height: 100vh;
+  min-height: 100svh;
+  color: #18243a;
+  background:
+    radial-gradient(circle at 6% 4%, rgba(67, 110, 231, 0.1), transparent 28%),
+    radial-gradient(circle at 94% 88%, rgba(19, 184, 190, 0.07), transparent 30%),
+    #f4f7fb;
+}
+
+.pageInner {
+  width: min(100%, 1320px);
+  min-height: 100vh;
+  min-height: 100svh;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 4vw, 54px) 42px;
+}
+
+.siteHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 90px;
+  gap: 20px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.brandMark {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+  color: white;
+  background: #2449d8;
+  box-shadow: 0 6px 15px rgba(36, 73, 216, 0.22);
+}
+
+.brandName {
+  font-size: 18px;
+  font-weight: 850;
+  letter-spacing: -0.045em;
+}
+
+.brandDivider {
+  display: inline-block;
+  width: 1px;
+  height: 15px;
+  margin: 0 11px;
+  vertical-align: -2px;
+  background: #c9d1df;
+}
+
+.brandSuffix {
+  color: #506078;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.headerNote {
+  color: #617087;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+}
+
+.checking {
+  display: flex;
+  min-height: calc(100vh - 140px);
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #506078;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+.loginLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(410px, 0.85fr);
+  min-height: min(690px, calc(100svh - 134px));
+  gap: clamp(18px, 2vw, 28px);
+  padding-top: 12px;
+}
+
+.intro {
+  position: relative;
+  display: flex;
+  min-height: 620px;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: clamp(36px, 4.4vw, 64px);
+  border: 1px solid #263e70;
+  border-radius: 28px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 72% 70%, rgba(26, 188, 217, 0.3), transparent 31%),
+    radial-gradient(circle at 25% 110%, rgba(80, 98, 238, 0.46), transparent 36%),
+    linear-gradient(145deg, #111d3b 0%, #182e60 54%, #07142d 100%);
+  box-shadow: 0 28px 70px rgba(22, 43, 93, 0.14);
+}
+
+.intro::before {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.026) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.026) 1px, transparent 1px);
+  background-size: 34px 34px;
+  content: "";
+  pointer-events: none;
+}
+
+.introCopy,
+.introFoot {
+  position: relative;
+  z-index: 1;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #88dce9;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.22em;
+}
+
+.eyebrowDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4bd5c6;
+  box-shadow: 0 0 0 5px rgba(75, 213, 198, 0.12);
+}
+
+.intro h1 {
+  margin: 28px 0 18px;
+  font-size: clamp(34px, 3.6vw, 56px);
+  font-weight: 750;
+  letter-spacing: -0.055em;
+  line-height: 1.22;
+}
+
+.introCopy > p {
+  max-width: 410px;
+  margin: 0;
+  color: #c2cde4;
+  font-size: clamp(15px, 1.2vw, 17px);
+  line-height: 1.8;
+}
+
+.orbitArt {
+  position: relative;
+  width: min(100%, 420px);
+  height: 260px;
+  align-self: center;
+  margin: -12px 0 -4px;
+}
+
+.orbitOuter,
+.orbitMiddle,
+.orbitInner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border: 1px solid rgba(127, 214, 255, 0.22);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) rotate(-24deg);
+}
+
+.orbitOuter {
+  width: 405px;
+  height: 176px;
+  border-style: dashed;
+}
+
+.orbitMiddle {
+  width: 316px;
+  height: 232px;
+  border-color: rgba(136, 190, 255, 0.29);
+  transform: translate(-50%, -50%) rotate(35deg);
+}
+
+.orbitInner {
+  width: 188px;
+  height: 188px;
+  border-color: rgba(85, 218, 231, 0.29);
+}
+
+.orbitCore {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: 104px;
+  height: 104px;
+  place-items: center;
+  border: 1px solid rgba(137, 231, 248, 0.52);
+  border-radius: 31px;
+  color: #dbfaff;
+  background: linear-gradient(145deg, #2886b0, #1b3c80 65%, #152a5d);
+  box-shadow: 0 0 0 14px rgba(56, 151, 195, 0.09), 0 25px 70px rgba(4, 17, 49, 0.55);
+  font-size: 55px;
+  font-weight: 850;
+  letter-spacing: -0.12em;
+  transform: translate(-50%, -50%) rotate(-8deg);
+}
+
+.orbitPointOne,
+.orbitPointTwo {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 3px solid #c5f8ff;
+  border-radius: 50%;
+  background: #55cbd9;
+  box-shadow: 0 0 23px #76dff5;
+}
+
+.orbitPointOne {
+  top: 41px;
+  right: 50px;
+}
+
+.orbitPointTwo {
+  bottom: 64px;
+  left: 24px;
+  width: 8px;
+  height: 8px;
+}
+
+.orbitCaption {
+  position: absolute;
+  right: 0;
+  bottom: 5px;
+  color: #87a4d1;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.18em;
+}
+
+.introFoot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #b8cae7;
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.introFootLine {
+  width: 23px;
+  height: 1px;
+  background: #55d2d2;
+}
+
+.loginPanel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(34px, 4.2vw, 62px);
+  border: 1px solid #e0e6ef;
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 18px 55px rgba(29, 49, 85, 0.08);
+}
+
+.panelTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.panelIcon {
+  display: grid;
+  width: 45px;
+  height: 45px;
+  place-items: center;
+  border: 1px solid #dfe8fe;
+  border-radius: 14px;
+  color: #2d59de;
+  background: #f0f5ff;
+}
+
+.panelStep {
+  color: #65758d;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+}
+
+.panelEyebrow {
+  margin: 0 0 8px;
+  color: #315de6;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+}
+
+.loginPanel h2 {
+  margin: 0;
+  color: #16223b;
+  font-size: clamp(28px, 2.3vw, 34px);
+  font-weight: 760;
+  letter-spacing: -0.045em;
+  line-height: 1.25;
+}
+
+.panelDescription {
+  margin: 12px 0 34px;
+  color: #5e6b7f;
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.formError {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #f5c9ca;
+  border-radius: 11px;
+  color: #a72c37;
+  background: #fff4f4;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.field label,
+.teamFieldset legend {
+  color: #344158;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.field > input,
+.passwordField > input {
+  width: 100%;
+  min-height: 50px;
+  padding: 0 16px;
+  border: 1px solid #dce3ee;
+  border-radius: 11px;
+  outline: none;
+  color: #17243a;
+  background: #fbfcfe;
+  font: inherit;
+  font-size: 14px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.field input::placeholder {
+  color: #a2aebd;
+}
+
+.field input:hover:not(:disabled) {
+  border-color: #aabbd7;
+}
+
+.field input:focus-visible,
+.teamChoice:focus-within {
+  border-color: #4168e9;
+  box-shadow: 0 0 0 4px rgba(65, 104, 233, 0.13);
+}
+
+.field input:disabled {
+  cursor: progress;
+  opacity: 0.65;
+}
+
+.passwordField {
+  position: relative;
+}
+
+.passwordField > input {
+  padding-right: 56px;
+}
+
+.passwordField > button {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  color: #64758e;
+  background: transparent;
+  cursor: pointer;
+}
+
+.passwordField > button:hover {
+  color: #315de6;
+  background: #f1f5fc;
+}
+
+.passwordField > button:focus-visible,
+.textButton:focus-visible,
+.primaryButton:focus-visible,
+.logoutButton:focus-visible,
+.refreshButton:focus-visible,
+.filterButton:focus-visible,
+.clearButton:focus-visible,
+.gameCard:focus-visible {
+  outline: 3px solid #64cddf;
+  outline-offset: 3px;
+}
+
+.primaryButton {
+  display: flex;
+  width: 100%;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 5px;
+  border: 1px solid #254adb;
+  border-radius: 11px;
+  color: #fff;
+  background: #2f56df;
+  box-shadow: 0 9px 20px rgba(47, 86, 223, 0.2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: #2248d1;
+  box-shadow: 0 12px 22px rgba(47, 86, 223, 0.27);
+  transform: translateY(-1px);
+}
+
+.primaryButton:disabled,
+.logoutButton:disabled,
+.refreshButton:disabled,
+.textButton:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.privacyNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 34px;
+  padding-top: 20px;
+  border-top: 1px solid #edf0f5;
+  color: #5c6b80;
+}
+
+.privacyNote svg {
+  flex: none;
+  margin-top: 1px;
+  color: #3e9b99;
+}
+
+.privacyNote p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.teamFieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.teamFieldset legend {
+  margin-bottom: 10px;
+}
+
+.teamChoices {
+  display: grid;
+  max-height: 230px;
+  gap: 9px;
+  overflow-y: auto;
+}
+
+.teamChoice {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 13px;
+  border: 1px solid #dfe6f0;
+  border-radius: 11px;
+  color: #283750;
+  background: #fbfcfe;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.teamChoice:has(input:checked) {
+  border-color: #3c65e6;
+  background: #f0f4ff;
+}
+
+.teamChoice input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.teamChoiceMark {
+  display: grid;
+  width: 19px;
+  height: 19px;
+  flex: none;
+  place-items: center;
+  border: 1.5px solid #a9b6c9;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.teamChoice:has(input:checked) .teamChoiceMark {
+  border-color: #355fe0;
+}
+
+.teamChoice:has(input:checked) .teamChoiceMark::after {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #355fe0;
+  content: "";
+}
+
+.textButton {
+  margin-top: 12px;
+  padding: 5px 0;
+  border: 0;
+  border-radius: 4px;
+  color: #315de6;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.textButton:hover {
+  text-decoration: underline;
+}
+
+/* Competition selection */
+.selection {
+  padding: clamp(22px, 4vw, 50px) 0 20px;
+}
+
+.selectionHero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 38px;
+}
+
+.selectionEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 12px;
+  color: #315de6;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.selectionEyebrow::before {
+  width: 20px;
+  height: 2px;
+  background: #2f5be2;
+  content: "";
+}
+
+.selectionHero h1 {
+  margin: 0;
+  color: #14213b;
+  font-size: clamp(32px, 4vw, 50px);
+  font-weight: 780;
+  letter-spacing: -0.06em;
+  line-height: 1.15;
+}
+
+.selectionHero p:last-child {
+  margin: 14px 0 0;
+  color: #5e6c81;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.viewerIdentity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 255px;
+  padding: 12px 13px 12px 16px;
+  border: 1px solid #dfe6f1;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 8px 25px rgba(30, 54, 102, 0.04);
+}
+
+.teamAvatar {
+  display: grid;
+  width: 41px;
+  height: 41px;
+  flex: none;
+  place-items: center;
+  border-radius: 12px;
+  color: #3559ca;
+  background: #eaf0ff;
+}
+
+.identityText {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.identityText strong {
+  overflow: hidden;
+  color: #1e2a42;
+  font-size: 13px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identityText span {
+  overflow: hidden;
+  color: #607087;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logoutButton {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  place-items: center;
+  border: 1px solid #e3e8f0;
+  border-radius: 9px;
+  color: #68768e;
+  background: #fff;
+  cursor: pointer;
+}
+
+.logoutButton:hover {
+  border-color: #b9c8ec;
+  color: #244bd7;
+}
+
+.selectionNotice {
+  margin: 0 0 18px;
+  padding: 12px 15px;
+  border: 1px solid #f3d5aa;
+  border-radius: 11px;
+  color: #8c5c16;
+  background: #fff9ee;
+  font-size: 13px;
+}
+
+.selectionToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.filterList {
+  display: flex;
+  max-width: 100%;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px;
+  border: 1px solid #e2e8f1;
+  border-radius: 12px;
+  background: #eaf0f7;
+}
+
+.filterButton {
+  min-height: 38px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: 9px;
+  color: #738095;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.filterButton:hover {
+  color: #31415d;
+}
+
+.filterButtonActive {
+  color: #1c2a44;
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(31, 56, 102, 0.09);
+}
+
+.filterCount {
+  margin-left: 6px;
+  color: #62728a;
+  font-size: 11px;
+}
+
+.toolbarRight {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.searchBox {
+  position: relative;
+  width: min(100%, 260px);
+}
+
+.searchBox svg {
+  position: absolute;
+  top: 50%;
+  left: 13px;
+  color: #96a4b7;
+  transform: translateY(-50%);
+}
+
+.searchBox input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 13px 0 41px;
+  border: 1px solid #dfe6f0;
+  border-radius: 11px;
+  outline: none;
+  color: #25334c;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+}
+
+.searchBox input:focus-visible {
+  border-color: #4168e9;
+  box-shadow: 0 0 0 4px rgba(65, 104, 233, 0.13);
+}
+
+.searchBox input::placeholder {
+  color: #9aa7ba;
+}
+
+.refreshButton {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 15px;
+  border: 1px solid #dfe6f0;
+  border-radius: 11px;
+  color: #53627a;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.refreshButton:hover:not(:disabled) {
+  border-color: #b5c5ea;
+  color: #244bd7;
+}
+
+.resultCount {
+  margin: 0 0 14px;
+  color: #5d6c81;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.gamesGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.gameCard {
+  display: flex;
+  min-width: 0;
+  min-height: 235px;
+  overflow: hidden;
+  border: 1px solid #e0e6ef;
+  border-radius: 18px;
+  color: inherit;
+  background: #fff;
+  box-shadow: 0 8px 26px rgba(29, 55, 100, 0.045);
+  text-decoration: none;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.gameCard:hover {
+  border-color: #b4c5e8;
+  box-shadow: 0 16px 36px rgba(31, 57, 108, 0.13);
+  transform: translateY(-3px);
+}
+
+.gameVisual {
+  position: relative;
+  width: 36%;
+  min-width: 140px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 65% 36%, rgba(74, 198, 223, 0.75), transparent 15%),
+    repeating-radial-gradient(circle at 58% 50%, transparent 0 20px, rgba(132, 216, 255, 0.15) 21px 22px),
+    linear-gradient(140deg, #193e87, #0f1b3a 74%);
+}
+
+.gameVisual::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 30%, rgba(10, 26, 57, 0.2));
+  content: "";
+  pointer-events: none;
+}
+
+.gameVisual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gameVisualPlaceholder {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  color: rgba(211, 244, 255, 0.82);
+  transform: translate(-50%, -50%);
+}
+
+.gameContent {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  padding: 21px 23px 19px;
+}
+
+.gameStatus {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 9px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.025em;
+}
+
+.gameStatus::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
+}
+
+.statusActive {
+  color: #0a8d68;
+  background: #e8f8f1;
+}
+
+.statusUpcoming {
+  color: #a76c10;
+  background: #fff5e4;
+}
+
+.statusEnded {
+  color: #5a6a7f;
+  background: #f0f3f7;
+}
+
+.gameTitle {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 13px 0 0;
+  color: #1a2944;
+  font-size: clamp(17px, 1.5vw, 20px);
+  font-weight: 770;
+  letter-spacing: -0.035em;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.gameSummary {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 7px 0 0;
+  color: #5d6b80;
+  font-size: 12px;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.gameFoot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.gameTime {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: #5b6b80;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.gameTime strong {
+  color: #516078;
+  font-weight: 650;
+}
+
+.gameAction {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  color: #315de6;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.emptyState {
+  display: flex;
+  min-height: 300px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  border: 1px dashed #ccd7e5;
+  border-radius: 18px;
+  color: #62728a;
+  background: rgba(255, 255, 255, 0.72);
+  text-align: center;
+}
+
+.emptyState svg {
+  margin-bottom: 14px;
+  color: #6786d6;
+}
+
+.emptyState h2 {
+  margin: 0;
+  color: #24354f;
+  font-size: 19px;
+  font-weight: 750;
+}
+
+.emptyState p {
+  max-width: 390px;
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.clearButton {
+  margin-top: 18px;
+  padding: 9px 14px;
+  border: 1px solid #c7d3e9;
+  border-radius: 9px;
+  color: #2d55d2;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.clearButton:hover {
+  background: #f1f5ff;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 950px) {
+  .loginLayout {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 0.9fr);
+  }
+
+  .intro {
+    padding: 38px;
+  }
+
+  .loginPanel {
+    padding: 36px;
+  }
+
+  .orbitArt {
+    transform: scale(0.82);
+  }
+
+  .gameVisual {
+    width: 31%;
+    min-width: 110px;
+  }
+}
+
+@media (max-width: 760px) {
+  .siteHeader {
+    min-height: 72px;
+  }
+
+  .headerNote {
+    display: none;
+  }
+
+  .loginLayout {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding-top: 0;
+  }
+
+  .intro {
+    min-height: 265px;
+    padding: 30px;
+  }
+
+  .intro h1 {
+    margin: 18px 0 10px;
+    font-size: clamp(30px, 7vw, 38px);
+  }
+
+  .introCopy > p {
+    font-size: 13px;
+  }
+
+  .introFoot {
+    margin-top: 24px;
+  }
+
+  .orbitArt {
+    position: absolute;
+    right: -130px;
+    bottom: 0;
+    opacity: 0.32;
+    transform: scale(0.78);
+  }
+
+  .loginPanel {
+    padding: 31px;
+  }
+
+  .selectionHero {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .viewerIdentity {
+    width: 100%;
+  }
+
+  .selectionToolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .filterList {
+    width: fit-content;
+  }
+
+  .toolbarRight {
+    justify-content: stretch;
+  }
+
+  .searchBox {
+    width: 100%;
+  }
+
+  .gamesGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .pageInner {
+    padding: 0 15px 28px;
+  }
+
+  .brandName {
+    font-size: 16px;
+  }
+
+  .brandSuffix {
+    font-size: 13px;
+  }
+
+  .intro {
+    min-height: 255px;
+    padding: 26px;
+    border-radius: 20px;
+  }
+
+  .loginPanel {
+    padding: 27px 23px;
+    border-radius: 20px;
+  }
+
+  .panelTop {
+    margin-bottom: 26px;
+  }
+
+  .selection {
+    padding-top: 28px;
+  }
+
+  .filterList {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .filterButton {
+    padding: 0 9px;
+  }
+
+  .refreshButton {
+    padding: 0 12px;
+  }
+
+  .refreshButton span {
+    display: none;
+  }
+
+  .gameCard {
+    min-height: 210px;
+  }
+
+  .gameVisual {
+    width: 29%;
+    min-width: 95px;
+  }
+
+  .gameContent {
+    padding: 16px;
+  }
+
+  .gameFoot {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner,
+  .gameCard,
+  .primaryButton {
+    animation: none;
+    transition: none;
+  }
+}

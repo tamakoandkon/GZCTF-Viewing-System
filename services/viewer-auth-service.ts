@@ -31,10 +31,13 @@ export async function loginViewer(input: {
 }
 
 export async function logoutViewer(): Promise<void> {
-  await fetch("/api/viewer/session/logout", {
+  const response = await fetch("/api/viewer/session/logout", {
     method: "POST",
     credentials: "same-origin",
     cache: "no-store",
     headers: { Accept: "application/json" },
   })
+  if (!response.ok) {
+    throw new Error(`Failed to end viewer session: ${response.status}`)
+  }
 }

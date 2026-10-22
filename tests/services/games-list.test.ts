@@ -4,6 +4,7 @@ import {
   getUpcomingGames,
   getEndedGames,
   sortGamesByRecent,
+  sortGamesForViewing,
   getGameStatus,
   getGameStatusText,
   formatGameTime,
@@ -60,6 +61,14 @@ describe('games-list-service', () => {
     })
   })
 
+  describe('sortGamesForViewing', () => {
+    it('puts live games first, then the next starting game, then recently ended games', () => {
+      const sorted = sortGamesForViewing(mockGames)
+      expect(sorted.map((game) => game.id)).toEqual([1, 2, 3, 4])
+      expect(sorted).not.toBe(mockGames)
+    })
+  })
+
   describe('getGameStatus', () => {
     it('returns active for running game', () => {
       expect(getGameStatus(mockGames[0])).toBe('active')
@@ -85,6 +94,10 @@ describe('games-list-service', () => {
       const formatted = formatGameTime(1700000000000)
       expect(typeof formatted).toBe('string')
       expect(formatted.length).toBeGreaterThan(0)
+    })
+
+    it('does not render an invalid upstream timestamp as a broken date', () => {
+      expect(formatGameTime(Number.MAX_VALUE)).toBe('时间待定')
     })
   })
 })
