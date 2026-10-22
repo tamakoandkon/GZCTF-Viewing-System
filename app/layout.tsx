@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: 'CTF 竞技场 - 3D可视化',
   description: 'GZCTF比赛数据3D可视化展示',
   generator: 'v0.app',
+  icons: { icon: '/gzctf-viewing-mark.svg' },
 }
 
 export default function RootLayout({

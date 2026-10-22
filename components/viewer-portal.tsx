@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Image from "next/image"
 import {
   ArrowRight,
   Eye,
@@ -125,7 +126,7 @@ export function ViewerPortal() {
         <header className={styles.siteHeader}>
           <div className={styles.brand} aria-label="GZCTF 观赛中心">
             <span className={styles.brandMark} aria-hidden="true">
-              <ShieldCheck size={23} strokeWidth={2.1} />
+              <Image src="/gzctf-viewing-mark.svg" width={38} height={38} alt="" />
             </span>
             <span>
               <span className={styles.brandName}>GZCTF</span>
@@ -163,7 +164,9 @@ export function ViewerPortal() {
                 <div className={styles.orbitOuter} />
                 <div className={styles.orbitMiddle} />
                 <div className={styles.orbitInner} />
-                <div className={styles.orbitCore}>Z</div>
+                <div className={styles.orbitCore}>
+                  <Image src="/gzctf-viewing-mark.svg" width={104} height={104} alt="" />
+                </div>
                 <span className={styles.orbitPointOne} />
                 <span className={styles.orbitPointTwo} />
                 <span className={styles.orbitCaption}>WATCH THE GAME UNFOLD</span>

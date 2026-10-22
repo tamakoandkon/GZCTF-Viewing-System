@@ -37,9 +37,13 @@
   height: 38px;
   place-items: center;
   border-radius: 12px;
-  color: white;
-  background: #2449d8;
   box-shadow: 0 6px 15px rgba(36, 73, 216, 0.22);
+}
+
+.brandMark img {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .brandName {
@@ -208,13 +212,14 @@
   place-items: center;
   border: 1px solid rgba(137, 231, 248, 0.52);
   border-radius: 31px;
-  color: #dbfaff;
-  background: linear-gradient(145deg, #2886b0, #1b3c80 65%, #152a5d);
   box-shadow: 0 0 0 14px rgba(56, 151, 195, 0.09), 0 25px 70px rgba(4, 17, 49, 0.55);
-  font-size: 55px;
-  font-weight: 850;
-  letter-spacing: -0.12em;
   transform: translate(-50%, -50%) rotate(-8deg);
+}
+
+.orbitCore img {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .orbitPointOne,
