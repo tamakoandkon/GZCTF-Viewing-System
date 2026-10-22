@@ -1,24 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
-  <title id="title">GZCTF 观赛系统标识</title>
-  <desc id="desc">深蓝色方形中，一只由轨道构成的眼睛注视着地球。</desc>
-  <defs>
-    <linearGradient id="surface" x1="0" y1="0" x2="1" y2="1">
-      <stop stop-color="#233f91"/>
-      <stop offset=".53" stop-color="#142e68"/>
-      <stop offset="1" stop-color="#081a3a"/>
-    </linearGradient>
-    <linearGradient id="iris" x1="0" y1="0" x2="1" y2="1">
-      <stop stop-color="#86efff"/>
-      <stop offset="1" stop-color="#4d83ff"/>
-    </linearGradient>
-  </defs>
-  <rect x="2" y="2" width="124" height="124" rx="33" fill="url(#surface)"/>
-  <rect x="2.5" y="2.5" width="123" height="123" rx="32.5" fill="none" stroke="#91caff" stroke-opacity=".35"/>
-  <circle cx="64" cy="64" r="47" fill="none" stroke="#76b9f9" stroke-opacity=".3" stroke-width="1.5"/>
-  <path d="M17 64c13-19 29-28 47-28s34 9 47 28C98 83 82 92 64 92S30 83 17 64Z" fill="#0d2655" stroke="#a4eaff" stroke-width="5" stroke-linejoin="round"/>
-  <circle cx="64" cy="64" r="21" fill="url(#iris)"/>
-  <circle cx="64" cy="64" r="16" fill="#124c9d"/>
-  <path d="M48 64h32M64 48c-6 8-6 24 0 32m0-32c6 8 6 24 0 32" fill="none" stroke="#bcf5ff" stroke-width="2.2" stroke-linecap="round"/>
-  <circle cx="99" cy="30" r="4.5" fill="#5ce4d5"/>
-  <circle cx="29" cy="99" r="2.5" fill="#8acfff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">GZCTF 观赛系统</title>
+  <rect width="128" height="128" rx="28" fill="#162b5a"/>
+  <path d="M91 37A38 38 0 1 0 102 74H70" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

@@ -1,6 +1,6 @@
 # GZCTF Viewing System — 3D CTF 竞赛实时观赛系统
 
-<img src="public/gzctf-viewing-badge.svg" alt="GZCTF Viewing System 徽章：轨道之眼与地球" width="220" />
+<img src="public/gzctf-viewing-badge.svg" alt="GZCTF Viewing System 简约字母徽章" width="180" />
 
 基于 **Next.js + Three.js** 构建的 CTF（Capture The Flag）竞赛 3D 实时可视化观赛系统。将枯燥的记分板数据转化为生动的太空地球攻防场景，为 CTF 赛事提供沉浸式的观赛体验。
 
