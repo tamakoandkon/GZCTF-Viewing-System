@@ -8,7 +8,6 @@ import {
   LogOut,
   RefreshCw,
   Search,
-  UsersRound,
 } from "lucide-react"
 
 import {
@@ -28,12 +27,6 @@ const statusText: Record<GameStatus, string> = {
   active: "进行中",
   upcoming: "即将开始",
   ended: "已结束",
-}
-
-const actionText: Record<GameStatus, string> = {
-  active: "进入观赛",
-  upcoming: "查看赛场",
-  ended: "查看结果",
 }
 
 function isoGameTime(timestamp: number): string | undefined {
@@ -97,15 +90,12 @@ export function GameSelection({ viewer, onLogout, loggingOut, sessionNotice }: G
     <section className={styles.selection} aria-labelledby="selection-heading">
       <div className={styles.selectionHero}>
         <div>
-          <p className={styles.selectionEyebrow}>YOUR VIEWING SEAT</p>
-          <h1 id="selection-heading">选择一场比赛</h1>
-          <p>浏览比赛赛况，按自己的节奏进入观赛。</p>
+          <h1 id="selection-heading">选择比赛</h1>
         </div>
         <div className={styles.viewerIdentity}>
-          <span className={styles.teamAvatar} aria-hidden="true"><UsersRound size={20} /></span>
           <span className={styles.identityText}>
             <strong title={viewer.team.name}>{viewer.team.name}</strong>
-            <span title={viewer.userName}>{viewer.userName} 的观赛席位</span>
+            <span title={viewer.userName}>{viewer.userName}</span>
           </span>
           <button
             type="button"
@@ -155,7 +145,6 @@ export function GameSelection({ viewer, onLogout, loggingOut, sessionNotice }: G
             aria-label={loading ? "正在刷新比赛列表" : "刷新比赛列表"}
           >
             <RefreshCw size={16} aria-hidden="true" />
-            <span>刷新</span>
           </button>
         </div>
       </div>
@@ -164,7 +153,6 @@ export function GameSelection({ viewer, onLogout, loggingOut, sessionNotice }: G
         <div className={styles.emptyState} role="status" aria-live="polite">
           <RefreshCw className={styles.spinner} size={27} aria-hidden="true" />
           <h2>正在加载比赛</h2>
-          <p>马上为你整理可观看的赛场。</p>
         </div>
       ) : error ? (
         <div className={styles.emptyState} role="alert">
@@ -179,18 +167,13 @@ export function GameSelection({ viewer, onLogout, loggingOut, sessionNotice }: G
         <div className={styles.emptyState}>
           <Gamepad2 size={30} aria-hidden="true" />
           <h2>暂时没有可观看的比赛</h2>
-          <p>稍后再回来看看，或刷新列表获取最新比赛。</p>
         </div>
       ) : (
         <>
-          <p className={styles.resultCount} role="status">
-            找到 {visibleGames.length} 场比赛
-          </p>
           {visibleGames.length === 0 ? (
             <div className={styles.emptyState}>
               <Search size={29} aria-hidden="true" />
               <h2>没有匹配的比赛</h2>
-              <p>试试其他名称，或清除筛选条件。</p>
               <button
                 className={styles.clearButton}
                 type="button"
@@ -212,7 +195,7 @@ export function GameSelection({ viewer, onLogout, loggingOut, sessionNotice }: G
                     href={`/scoreboard/${game.id}`}
                     prefetch={false}
                     className={styles.gameCard}
-                    aria-label={`${game.title}，${statusText[status]}，${actionText[status]}`}
+                    aria-label={`${game.title}，${statusText[status]}，查看比赛`}
                   >
                     <div className={styles.gameVisual} aria-hidden="true">
                       {game.poster ? (
@@ -236,15 +219,13 @@ export function GameSelection({ viewer, onLogout, loggingOut, sessionNotice }: G
                         {statusText[status]}
                       </span>
                       <h2 className={styles.gameTitle}>{game.title}</h2>
-                      {game.summary && <p className={styles.gameSummary}>{game.summary}</p>}
                       <div className={styles.gameFoot}>
                         <span className={styles.gameTime}>
-                          <span>开始 <strong><time dateTime={isoGameTime(game.start)}>{formatGameTime(game.start)}</time></strong></span>
-                          <span>结束 <strong><time dateTime={isoGameTime(game.end)}>{formatGameTime(game.end)}</time></strong></span>
+                          <time dateTime={isoGameTime(game.start)}>{formatGameTime(game.start)}</time>
+                          <span aria-hidden="true">—</span>
+                          <time dateTime={isoGameTime(game.end)}>{formatGameTime(game.end)}</time>
                         </span>
-                        <span className={styles.gameAction}>
-                          {actionText[status]} <ArrowUpRight size={16} aria-hidden="true" />
-                        </span>
+                        <ArrowUpRight className={styles.gameAction} size={20} aria-hidden="true" />
                       </div>
                     </div>
                   </Link>

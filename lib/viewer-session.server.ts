@@ -2,7 +2,11 @@ import { randomBytes } from "node:crypto"
 
 import type { ViewerTeam } from "@/types/viewer-session"
 
-export const VIEWER_SESSION_COOKIE = "gzctf_viewer_session"
+const configuredCookieName = process.env.VIEWER_SESSION_COOKIE_NAME
+if (configuredCookieName && !/^[A-Za-z0-9_-]{1,64}$/.test(configuredCookieName)) {
+  throw new Error("Invalid VIEWER_SESSION_COOKIE_NAME")
+}
+export const VIEWER_SESSION_COOKIE = configuredCookieName || "gzctf_viewer_session"
 export const VIEWER_SESSION_MAX_AGE_SECONDS = 8 * 60 * 60
 
 const DEFAULT_SESSION_TTL_MS = VIEWER_SESSION_MAX_AGE_SECONDS * 1_000

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import {
   isSameOriginRequest,
@@ -13,6 +13,8 @@ const input = {
   team: { id: 7, name: "Blue Team" },
   upstreamCookie: ".AspNetCore.Identity.Application=upstream-secret",
 }
+
+afterEach(() => vi.unstubAllEnvs())
 
 describe("viewer session registry", () => {
   it("allows only one active session per team and releases stale leases", () => {
@@ -41,6 +43,14 @@ describe("viewer session registry", () => {
 })
 
 describe("viewer session cookie boundary", () => {
+  it("uses an isolated cookie name for a preview instance", async () => {
+    vi.stubEnv("VIEWER_SESSION_COOKIE_NAME", "gzctf_viewer_preview_3001")
+    vi.resetModules()
+    const preview = await import("@/lib/viewer-session.server")
+    expect(preview.VIEWER_SESSION_COOKIE).toBe("gzctf_viewer_preview_3001")
+    expect(preview.viewerSessionCookie("test", true)).toContain("gzctf_viewer_preview_3001=test")
+  })
+
   it("creates an HttpOnly SameSite cookie and parses only canonical IDs", () => {
     const registry = new ViewerSessionRegistry()
     const session = registry.create(input)!
@@ -97,5 +107,17 @@ describe("viewer session cookie boundary", () => {
         }),
       ),
     ).toBe(false)
+
+    expect(
+      isSameOriginRequest(
+        new Request("http://localhost:3011/api/viewer/session/login", {
+          headers: {
+            Host: "viewer.example:3001",
+            Origin: "https://viewer.example:3001",
+            "X-Forwarded-Proto": "https",
+          },
+        }),
+      ),
+    ).toBe(true)
   })
 })

@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Rocket } from "lucide-react"
 import type { PublicSolveEvent } from "@/types/events"
 import type { ScoreboardResponse, TeamInfo } from "@/types/scoreboard"
 import { useTheme } from "@/contexts/theme-context"
@@ -217,59 +216,13 @@ export function InteractiveArena({ events, teams, challenges, allTeams }: Intera
     if (autoSystem?.suppressAuto) autoSystem.suppressAuto(15000)
   }
 
-  // 测试事件监听（设置面板中的测试按钮触发）
-  useEffect(() => {
-    const onTestAttack = () => {
-      console.log('test:attack received')
-      const mgr = globeControllerRef.current?.getSpaceshipManager?.()
-      console.log('mgr:', mgr, 'allTeams:', allTeams?.length, 'teams:', teams?.length)
-      const teamsList = allTeams && allTeams.length > 0 ? allTeams : teams
-      if (!mgr || !teamsList?.length) {
-        console.warn('Cannot fire test attack: no manager or teams')
-        return
-      }
-      const top = teamsList.find((t: any) => t.rank === 1)
-      if (!top) return
-      const targets = ["India", "Brazil", "Germany", "Mexico", "Ukraine"]
-      const target = targets[Math.floor(Math.random() * targets.length)]
-      console.log(`Firing test attack from ${top.name} to ${target}`)
-      mgr.createAttack(top.id, target, {
-        challengeCategory: "Web",
-        challengeTitle: "Test Attack",
-        isSuccess: true,
-      })
-    }
-    const onTestPromotion = () => {
-      const mgr = globeControllerRef.current?.getSpaceshipManager?.()
-      const teamsList = allTeams && allTeams.length > 0 ? allTeams : teams
-      if (!mgr || !teamsList?.length) return
-      const rank1 = teamsList.find((t: any) => t.rank === 1)
-      const rank2 = teamsList.find((t: any) => t.rank === 2)
-      if (!rank1 || !rank2) return
-      const others = teamsList.filter((t: any) => t.rank > 2)
-      const swapped2 = { ...rank2, rank: 1 }
-      const swapped1 = { ...rank1, rank: 2 }
-      mgr.updateTeams([swapped2, swapped1, ...others])
-      setTimeout(() => mgr.updateTeams(teamsList), 2000)
-    }
-    window.addEventListener("test:attack", onTestAttack)
-    window.addEventListener("test:promotion", onTestPromotion)
-    return () => {
-      window.removeEventListener("test:attack", onTestAttack)
-      window.removeEventListener("test:promotion", onTestPromotion)
-    }
-  }, [allTeams, teams])
-
   if (!teams || teams.length === 0) {
     return (
       <div className="w-full h-full cyber-panel relative overflow-hidden">
-        <div className="cyber-panel-header text-center"><Rocket className="w-5 h-5 inline-block mr-2 text-cyan-400" />沉浸式3D战斗竞技场<Rocket className="w-5 h-5 inline-block ml-2 text-cyan-400" /></div>
+        <div className="cyber-panel-header text-center">赛场</div>
         <div className="relative w-full h-[calc(100%-40px)] flex items-center justify-center">
           <div className="text-center text-gray-400">
-            <div className="text-xl">等待数据加载...</div>
-            <div className="text-sm mt-2">
-              当前分组队伍: {teams?.length || 0} | 总队伍数: {allTeams?.length || 0}
-            </div>
+            <div className="text-xl">暂无队伍数据</div>
           </div>
         </div>
       </div>
@@ -278,7 +231,7 @@ export function InteractiveArena({ events, teams, challenges, allTeams }: Intera
 
   return (
     <div className="w-full h-full cyber-panel relative overflow-hidden">
-      <div className="cyber-panel-header text-center"><Rocket className="w-5 h-5 inline-block mr-2 text-cyan-400" />沉浸式3D战斗竞技场<Rocket className="w-5 h-5 inline-block ml-2 text-cyan-400" /></div>
+      <div className="cyber-panel-header text-center">赛场</div>
       <div className="relative w-full h-[calc(100%-40px)] overflow-hidden">
         {/* WebGL 地球和飞船 - 优化响应式显示 */}
         <div 

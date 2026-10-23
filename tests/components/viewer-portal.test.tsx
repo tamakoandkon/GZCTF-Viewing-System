@@ -43,11 +43,11 @@ describe("ViewerPortal", () => {
     fireEvent.change(password, { target: { value: "secret" } })
     fireEvent.click(screen.getByRole("button", { name: "显示密码" }))
     expect(password).toHaveAttribute("type", "text")
-    fireEvent.click(screen.getByRole("button", { name: "登录并领取席位" }))
+    fireEvent.click(screen.getByRole("button", { name: "登录" }))
 
     await screen.findByRole("radio", { name: "Beta" })
     fireEvent.click(screen.getByRole("radio", { name: "Beta" }))
-    fireEvent.click(screen.getByRole("button", { name: "使用所选队伍继续" }))
+    fireEvent.click(screen.getByRole("button", { name: "继续" }))
 
     await waitFor(() => expect(screen.getByText("已进入 Beta 的比赛选择页")).toBeInTheDocument())
     expect(authMocks.loginViewer).toHaveBeenNthCalledWith(2, {
@@ -68,7 +68,7 @@ describe("ViewerPortal", () => {
     render(<ViewerPortal />)
     fireEvent.change(await screen.findByLabelText("用户名或邮箱"), { target: { value: "alice" } })
     fireEvent.change(screen.getByLabelText("密码"), { target: { value: "secret" } })
-    fireEvent.click(screen.getByRole("button", { name: "登录并领取席位" }))
+    fireEvent.click(screen.getByRole("button", { name: "登录" }))
     await screen.findByRole("button", { name: "返回，更换账号" })
     fireEvent.click(screen.getByRole("button", { name: "返回，更换账号" }))
 

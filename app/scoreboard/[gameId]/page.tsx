@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
+import Link from "next/link"
 import { getPublicGameSnapshot, ViewerApiError } from "@/services/api"
 import type { ScoreboardResponse } from "@/types/scoreboard"
 import type { EventsResponse } from "@/types/events"
@@ -11,8 +12,8 @@ import { EventsFeed } from "@/components/events-feed"
 import { TopTeamsAbility } from "@/components/top-teams-ability"
 import { CountdownTimer } from "@/components/countdown-timer"
 import { InteractiveArena } from "@/components/interactive-arena"
-import { AlertCircle } from "lucide-react"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { AlertCircle, ArrowLeft } from "lucide-react"
+import { Alert, AlertTitle } from "@/components/ui/alert"
 import { RotationStatus } from "@/components/rotation-status"
 import { SettingsPanel } from "@/components/settings-panel"
 import { CompetitionTitle } from "@/components/competition-title"
@@ -114,7 +115,7 @@ export default function ScoreboardPage() {
     return (
       <div className="min-h-screen deep-space-bg flex items-center justify-center">
         <div className="text-center">
-          <div className="text-2xl font-bold neon-text mb-4">系统初始化中...</div>
+          <div className="text-2xl font-bold neon-text mb-4">正在加载赛况</div>
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
         </div>
       </div>
@@ -126,8 +127,10 @@ export default function ScoreboardPage() {
       <div className="min-h-screen deep-space-bg flex items-center justify-center p-4">
         <Alert variant="destructive" className="max-w-md">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>系统错误</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+          <AlertTitle>{error}</AlertTitle>
+          <Link href="/" className="mt-4 inline-flex items-center gap-2 text-sm underline underline-offset-4">
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />返回比赛列表
+          </Link>
         </Alert>
       </div>
     )
@@ -153,30 +156,22 @@ export default function ScoreboardPage() {
       )}
       {/* Header - 响应式 */}
       <div className="glass-panel-header border-b-0 px-3 py-2 lg:px-5 lg:py-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr,auto,1fr] items-center gap-2 lg:gap-4">
-          <div className="order-2 lg:order-1 flex items-center justify-center lg:justify-start">
-            <div
-              className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl flex items-center justify-center
-                            bg-gradient-to-br from-cyan-500/20 to-blue-600/20
-                            backdrop-blur-sm border border-white/20
-                            shadow-[0_0_12px_rgba(34,211,238,0.4),inset_0_0_8px_rgba(34,211,238,0.3)]
-                            hover:scale-[1.03] transition-transform duration-300"
-            >
-              <span className="text-white font-bold text-sm lg:text-base drop-shadow-[0_0_10px_rgba(255,255,255,0.35)]">
-                ZJCTF
-              </span>
-            </div>
+        <div className="grid grid-cols-[auto,minmax(0,1fr)] lg:grid-cols-[1fr,auto,1fr] items-center gap-2 lg:gap-4">
+          <div className="order-2 lg:order-1 flex items-center justify-start">
+            <Link href="/" className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300">
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />比赛列表
+            </Link>
           </div>
 
-          <div className="order-1 lg:order-2 flex items-center justify-center py-1 lg:py-0">
+          <div className="order-1 col-span-2 lg:order-2 lg:col-span-1 flex items-center justify-center py-1 lg:py-0">
             <CompetitionTitle title={game.title} />
           </div>
 
-          <div className="order-3 flex flex-col lg:flex-row items-center justify-center lg:justify-end gap-2 lg:gap-4">
+          <div className="order-3 flex items-center justify-end gap-2 lg:gap-4">
             <div className="flex items-center">
               <SettingsPanel onToggleGUI={() => setIsGUIVisible(!isGUIVisible)} isGUIVisible={isGUIVisible} />
             </div>
-            <div className="w-full lg:w-64">
+            <div className="w-40 sm:w-48 lg:w-64">
               <CountdownTimer endTimeUtc={game.end} startTimeUtc={game.start} />
             </div>
           </div>
