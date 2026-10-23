@@ -1,185 +1,77 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
-import { Clock } from "lucide-react"
-import { formatTime } from "@/utils/format-time"
+import { useEffect, useRef, useState } from "react"
 
 interface CountdownTimerProps {
   endTimeUtc: number
   startTimeUtc: number
 }
 
+type Phase = "loading" | "upcoming" | "active" | "ended"
+
+function formatRemaining(milliseconds: number): string {
+  const seconds = Math.max(0, Math.ceil(milliseconds / 1000))
+  const days = Math.floor(seconds / 86_400)
+  const hours = Math.floor((seconds % 86_400) / 3_600)
+  const minutes = Math.floor((seconds % 3_600) / 60)
+  const remainder = seconds % 60
+  const clock = [hours, minutes, remainder].map((value) => value.toString().padStart(2, "0")).join(":")
+  return days > 0 ? `${days}天 ${clock}` : clock
+}
+
 export function CountdownTimer({ endTimeUtc, startTimeUtc }: CountdownTimerProps) {
-  const [timeLeft, setTimeLeft] = useState({
-    days: 0,
-    hours: 0,
-    minutes: 0,
-    seconds: 0,
-    isStarted: false,
-    isEnded: false,
-    progress: 0,
+  // The first render is deterministic so server and client markup match.
+  const [clock, setClock] = useState<{ phase: Phase; remaining: number }>({
+    phase: "loading",
+    remaining: 0,
   })
-
-  // Keep the server and first client render deterministic to avoid hydration drift.
-  const [currentTime, setCurrentTime] = useState<number>(0)
-
-  const initialMountTime = useRef<number>(0)
-  const initialTotalDuration = useRef<number>(0)
-  const ceremonyFired = useRef<boolean>(false)
+  const ceremonyFired = useRef(false)
 
   useEffect(() => {
-    initialMountTime.current = Date.now()
-    initialTotalDuration.current = 0
     ceremonyFired.current = false
 
-    const updateTime = () => {
+    function tick() {
       const now = Date.now()
-      const isStarted = now >= startTimeUtc
-      const isEnded = now >= endTimeUtc
-
-      if (initialTotalDuration.current === 0) {
-        if (isEnded) {
-          initialTotalDuration.current = 1
-        } else if (isStarted) {
-          initialTotalDuration.current = Math.max(1, endTimeUtc - startTimeUtc)
-        } else {
-          initialTotalDuration.current = Math.max(1, startTimeUtc - initialMountTime.current)
-        }
-      }
-
-      let difference = 0
-      if (isEnded) {
+      if (now >= endTimeUtc) {
+        setClock({ phase: "ended", remaining: 0 })
         if (!ceremonyFired.current) {
           ceremonyFired.current = true
-          window.dispatchEvent(new CustomEvent('game:ended'))
+          window.dispatchEvent(new CustomEvent("game:ended"))
         }
-      } else if (isStarted) {
-        difference = endTimeUtc - now
+      } else if (now >= startTimeUtc) {
+        setClock({ phase: "active", remaining: endTimeUtc - now })
       } else {
-        difference = startTimeUtc - now
+        setClock({ phase: "upcoming", remaining: startTimeUtc - now })
       }
-
-      let progress = 0
-      if (isEnded) {
-        progress = 1
-      } else if (isStarted) {
-        progress = Math.min(1, Math.max(0, (now - startTimeUtc) / initialTotalDuration.current))
-      } else {
-        progress = Math.min(1, Math.max(0, 1 - (now - initialMountTime.current) / initialTotalDuration.current))
-      }
-
-      setCurrentTime(now)
-      setTimeLeft({
-        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-        minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
-        seconds: Math.floor((difference % (1000 * 60)) / 1000),
-        isStarted,
-        isEnded,
-        progress,
-      })
     }
 
-    const initialTick = window.setTimeout(updateTime, 0)
-    const timer = window.setInterval(updateTime, 1000)
-
+    const initialTick = window.setTimeout(tick, 0)
+    const interval = window.setInterval(tick, 1_000)
     return () => {
       window.clearTimeout(initialTick)
-      window.clearInterval(timer)
+      window.clearInterval(interval)
     }
   }, [endTimeUtc, startTimeUtc])
 
-  const getProgressColor = () => {
-    if (timeLeft.isEnded) return "#EF4444"
-    if (timeLeft.progress > 0.8) return "#EF4444"
-    if (timeLeft.progress > 0.5) return "#FDE047"
-    return "#4ADE80"
-  }
-
-  const progressColor = getProgressColor()
-  const circleRadius = 25
-  const circleCircumference = 2 * Math.PI * circleRadius
-  const strokeDashoffset = circleCircumference - timeLeft.progress * circleCircumference
+  const label = clock.phase === "upcoming" ? "距开始" : clock.phase === "loading" ? "倒计时" : "剩余"
+  const urgent = clock.phase === "active" && clock.remaining <= 10 * 60_000
 
   return (
-    <div className="flex items-center gap-3 w-full max-w-[300px]">
-      <div className="relative w-[60px] h-[60px] flex items-center justify-center">
-        <svg width="60" height="60" viewBox="0 0 60 60">
-          <circle className="stroke-gray-700 stroke-[4] fill-transparent" cx="30" cy="30" r={circleRadius} />
-          <circle
-            className="stroke-current stroke-[4] fill-transparent stroke-linecap-round transition-all duration-300 ease-in-out"
-            cx="30"
-            cy="30"
-            r={circleRadius}
-            stroke={progressColor}
-            strokeDasharray={circleCircumference}
-            strokeDashoffset={strokeDashoffset}
-            transform="rotate(-90 30 30)"
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Clock className="w-5 h-5 text-white" />
-        </div>
-      </div>
-
-      <div className="flex-1 min-w-0">
-        {timeLeft.isEnded ? (
-          <span className="text-red-400 font-bold text-sm">比賽已結束</span>
-        ) : timeLeft.isStarted ? (
-          <div className="flex flex-col">
-            <span className="text-muted text-xs mb-0.5">剩餘時間</span>
-            <div className="flex items-center gap-0.5 text-sm whitespace-nowrap">
-              {timeLeft.days > 0 && (
-                <>
-                  <span className="font-bold text-lg" style={{ color: progressColor }}>
-                    {timeLeft.days}
-                  </span>
-                  <span className="text-muted text-xs">天</span>
-                </>
-              )}
-              <span className="font-bold text-lg w-5 text-right" style={{ color: progressColor }}>
-                {timeLeft.hours.toString().padStart(2, "0")}
-              </span>
-              <span className="text-muted text-xs">:</span>
-              <span className="font-bold text-lg w-5 text-right" style={{ color: progressColor }}>
-                {timeLeft.minutes.toString().padStart(2, "0")}
-              </span>
-              <span className="text-muted text-xs">:</span>
-              <span className="font-bold text-lg w-5 text-right" style={{ color: progressColor }}>
-                {timeLeft.seconds.toString().padStart(2, "0")}
-              </span>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col">
-            <span className="text-muted text-xs mb-0.5">開始倒計時</span>
-            <div className="flex items-center gap-0.5 text-sm whitespace-nowrap">
-              {timeLeft.days > 0 && (
-                <>
-                  <span className="font-bold text-lg" style={{ color: progressColor }}>
-                    {timeLeft.days}
-                  </span>
-                  <span className="text-muted text-xs">天</span>
-                </>
-              )}
-              <span className="font-bold text-lg w-5 text-right" style={{ color: progressColor }}>
-                {timeLeft.hours.toString().padStart(2, "0")}
-              </span>
-              <span className="text-muted text-xs">:</span>
-              <span className="font-bold text-lg w-5 text-right" style={{ color: progressColor }}>
-                {timeLeft.minutes.toString().padStart(2, "0")}
-              </span>
-              <span className="text-muted text-xs">:</span>
-              <span className="font-bold text-lg w-5 text-right" style={{ color: progressColor }}>
-                {timeLeft.seconds.toString().padStart(2, "0")}
-              </span>
-            </div>
-          </div>
-        )}
-        {currentTime > 0 && (
-          <div className="text-xs text-muted mt-1 text-right">{formatTime(currentTime)}</div>
-        )}
-      </div>
+    <div
+      role="timer"
+      aria-label={clock.phase === "ended" ? "比赛已结束" : clock.phase === "loading" ? "正在加载倒计时" : `${label} ${formatRemaining(clock.remaining)}`}
+      className="flex min-h-11 items-center justify-end gap-2 whitespace-nowrap text-sm"
+    >
+      {clock.phase === "ended" ? (
+        <span className="font-semibold text-white">比赛已结束</span>
+      ) : (
+        <>
+          <span className="text-white/75">{label}</span>
+          <span className={`font-semibold tabular-nums ${urgent ? "text-orange-300" : "text-white"}`}>
+            {clock.phase === "loading" ? "--:--:--" : formatRemaining(clock.remaining)}
+          </span>
+        </>
+      )}
     </div>
   )
 }

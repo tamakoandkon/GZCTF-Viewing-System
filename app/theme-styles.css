@@ -377,13 +377,12 @@ img {
     width: 100%;
     margin-bottom: 0.5rem;
     height: auto;
-    min-height: 300px;
+    min-height: 250px;
   }
   
   .center-panel {
-    height: 400px;
-    min-height: 400px;
-    order: -1; /* 3D界面在移动端优先显示 */
+    height: 260px;
+    min-height: 260px;
   }
 }
 
@@ -404,9 +403,8 @@ img {
   }
   
   .center-panel {
-    height: 500px;
-    min-height: 500px;
-    order: -1; /* 3D界面在平板端优先显示 */
+    height: 420px;
+    min-height: 420px;
   }
 }
 

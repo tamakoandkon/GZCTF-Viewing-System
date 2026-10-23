@@ -8,7 +8,6 @@ import '../style.css'
 export const metadata: Metadata = {
   title: 'Viewing Room | CTF 观赛中心',
   description: '独立的 CTF 赛事实时可视化观赛系统',
-  generator: 'v0.app',
   icons: { icon: '/viewing-room-mark.svg' },
 }
 
