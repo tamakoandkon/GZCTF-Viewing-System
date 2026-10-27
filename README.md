@@ -88,7 +88,6 @@ pnpm start
 | **框架** | Next.js 16（App Router） |
 | **渲染** | React 19 |
 | **3D 引擎** | Three.js 0.169 |
-| **后期处理** | postprocessing |
 | **动画** | GSAP 3.12 |
 | **样式** | Tailwind CSS 3.4 |
 | **UI 组件** | Radix UI (shadcn/ui) |

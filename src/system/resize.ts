@@ -1,34 +1,58 @@
 import { sizes } from "./sizes"
-let cameras: any[] = [], renderers: any[] = [], canvas: HTMLElement | null = null
+
+let cameras: any[] = []
+let renderers: any[] = []
+let canvas: HTMLCanvasElement | null = null
+let resizeObserver: ResizeObserver | null = null
+
+function measureCanvas(): { width: number; height: number } | null {
+    const nextCanvas = document.getElementById('webgl') as HTMLCanvasElement | null
+    if (!nextCanvas) return null
+
+    canvas = nextCanvas
+    const container = nextCanvas.parentElement ?? document.body
+    return {
+        width: Math.max(container.clientWidth, 300),
+        height: Math.max(container.clientHeight, 200),
+    }
+}
+
 function resizeEvent() {
+    const size = measureCanvas()
+    if (!size) return
 
-    canvas = document.getElementById('webgl-container')
+    sizes.width = size.width
+    sizes.height = size.height
 
-    // Update sizes
-    if (!canvas) return
-    sizes.width = canvas.clientWidth
-    sizes.height = canvas.clientHeight
-
-    try {
-        // Update camera
-        for (let i = 0; i < cameras.length; i++) {
-            cameras[i].aspect = sizes.width / sizes.height
-            cameras[i].updateProjectionMatrix()
-        }
-        // Update renderer
-        for (let i = 0; i < renderers.length; i++) {
-            renderers[i].setSize(sizes.width, sizes.height)
-            renderers[i].setPixelRatio(Math.min(window.devicePixelRatio, 2))
-        }
-    } catch (error) {
-        // console.log(error)
+    for (const camera of cameras) {
+        camera.aspect = sizes.width / sizes.height
+        camera.updateProjectionMatrix()
     }
 
+    for (const renderer of renderers) {
+        renderer.setSize(sizes.width, sizes.height)
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    }
 }
-export function initResizeEventListener(_cameras: any[] = [], _renderers: any[] = []){
-    cameras = _cameras; renderers = _renderers;
+
+export function initResizeEventListener(_cameras: any[] = [], _renderers: any[] = []) {
+    cameras = _cameras
+    renderers = _renderers
     window.addEventListener('resize', resizeEvent)
+
+    const canvasElement = document.getElementById('webgl')
+    const container = canvasElement?.parentElement
+    if (container && typeof ResizeObserver !== 'undefined') {
+        resizeObserver = new ResizeObserver(resizeEvent)
+        resizeObserver.observe(container)
+    }
 }
-export function clearResizeEventListener(){
-    window.removeEventListener("resize", resizeEvent)
+
+export function clearResizeEventListener() {
+    window.removeEventListener('resize', resizeEvent)
+    resizeObserver?.disconnect()
+    resizeObserver = null
+    cameras = []
+    renderers = []
+    canvas = null
 }

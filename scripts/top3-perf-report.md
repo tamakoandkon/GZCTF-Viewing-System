@@ -12,7 +12,7 @@
 
 相关代码：
 - [AutoShowcaseSystem.js](src/globe/AutoShowcaseSystem.js#L723-L799)
-- [scene.js](src/scene.js#L900-L950)
+- [scene.js](src/scene.ts#L900-L950)
 
 ## 性能数据采集（内置 JSON 导出）
 当 Top3 展示开始/结束时会自动采集帧数据，并在结束后自动下载 JSON 报告文件：
