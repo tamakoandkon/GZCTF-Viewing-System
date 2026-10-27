@@ -486,6 +486,8 @@ update(delta) {
 
 ### 3.5 攻击特效系统
 
+攻击/爆炸子系统位于 `src/globe/spaceships/attacks/`：`AttackSystem.ts` 负责生命周期与资源释放，`lightning.ts` / `energyWave.ts` / `portal.ts` / `particleFlood.ts` 各实现一种特效，`path.ts` 负责避球弧线，`palette.ts` 负责类别配色。`SpaceshipManager` 只保留一个门面方法。
+
 #### 随机选择机制
 
 每次 `createAttack()` 被调用时随机选择攻击类型：
