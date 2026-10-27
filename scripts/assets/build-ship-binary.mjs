@@ -1,6 +1,8 @@
 /**
  * 把 X-wing FBX 预处理成精简二进制资源（public/models/xwing.ship）
  *
+ * 原始 FBX 只作为离线构建输入，放在 assets/models/，不会进入 public 静态资源。
+ *
  * 为什么需要：原始 FBX 有 336 个网格 / 118 万顶点，浏览器端解析要 20~30 秒
  * （实测），内存占用高，低配机器会失败 —— 表现就是"只有光晕、看不到飞船"。
  *
@@ -17,7 +19,7 @@ import path from 'node:path'
 import * as THREE from 'three'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js'
 
-const SRC = process.argv[2] || 'public/models/xwing.fbx'
+const SRC = process.argv[2] || 'assets/models/xwing.fbx'
 const OUT = process.argv[3] || 'public/models/xwing.ship'
 const CELL = Number(process.argv[4] || 4) // 聚类网格大小（模型单位；模型最长边约 1090）
 

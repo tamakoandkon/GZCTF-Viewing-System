@@ -11,8 +11,8 @@
 1. [系统架构概览](#1-系统架构概览)
 2. [项目结构详解](#2-项目结构详解)
 3. [核心模块设计](#3-核心模块设计)
-   - [3.1 3D 场景引擎 (scene.js)](#31-3d-场景引擎-scenejs)
-   - [3.2 地球渲染系统 (Earth-github.js)](#32-地球渲染系统-earth-githubjs)
+   - [3.1 3D 场景引擎 (scene.ts)](#31-3d-场景引擎-scenets)
+   - [3.2 地球渲染系统 (Earth.ts)](#32-地球渲染系统-earthts)
    - [3.3 飞船系统 (Spaceship)](#33-飞船系统-spaceship)
    - [3.4 飞船管理器 (SpaceshipManager)](#34-飞船管理器-spaceshipmanager)
    - [3.5 攻击特效系统](#35-攻击特效系统)
@@ -50,7 +50,7 @@
 │  ┌────────────────────────┴─────────────────────────────┐   │
 │  │               3D Engine (Three.js)                     │   │
 │  │                                                        │   │
-│  │  scene.js ─── Earth ─── SpaceshipManager ─── Camera   │   │
+│  │  scene.ts ─── Earth ─── SpaceshipManager ─── Camera   │   │
 │  │                │              │                        │   │
 │  │            Country       Spaceships                    │   │
 │  │            Labels        Attacks                       │   │
@@ -74,7 +74,7 @@
 | **页面层** | Next.js App Router | 路由、布局、数据获取 |
 | **组件层** | React + TypeScript | UI 组件、状态管理 |
 | **服务层** | Route Handlers + TypeScript fetch API | 服务端取数、字段白名单脱敏、转换 |
-| **3D 引擎层** | Three.js + postprocessing | 场景渲染、特效、动画 |
+| **3D 引擎层** | Three.js + GSAP | 场景渲染、特效、动画 |
 | **系统工具层** | JS utilities | GUI、性能、交互 |
 
 ---
@@ -122,10 +122,10 @@
 
 | 模块 | 文件 | 行数（约） | 说明 |
 |------|------|-----------|------|
-| 场景 | `scene.js` | ~600 | 场景初始化、相机、光照、主循环 |
-| 地球 | `globe/Earth-github.js` | ~2700 | 地球渲染、国家边界/填充、标签 |
-| 飞船 | `globe/Spaceship.js` | ~500 | 飞船模型、标签、轨道运动 |
-| 管理器 | `globe/SpaceshipManager.js` | ~2200 | 飞船生命周期、攻击系统、特效 |
+| 场景 | `scene.ts` | ~890 | 场景初始化、相机、光照、主循环 |
+| 地球 | `globe/Earth.ts` | ~2390 | 地球渲染、国家边界/填充、标签 |
+| 飞船 | `globe/spaceships/Spaceship.ts` | ~1060 | 飞船模型、标签、轨道运动 |
+| 管理器 | `globe/spaceships/SpaceshipManager.ts` | ~390 | 飞船生命周期、攻击系统、特效 |
 | 运镜 | `globe/CameraDirector.js` | ~400 | 运镜预设、序列管理 |
 | 展示 | `globe/AutoShowcaseSystem.js` | ~350 | 自动展示调度 |
 | 后处理 | `effect.js` | ~100 | Bloom 等后处理特效 |
@@ -134,7 +134,7 @@
 
 ## 3. 核心模块设计
 
-### 3.1 3D 场景引擎 (scene.js)
+### 3.1 3D 场景引擎 (scene.ts)
 
 #### 初始化流程
 
@@ -147,7 +147,7 @@ initScene()
   ├─ 加载环境贴图（HDR）
   ├─ 创建 EffectComposer（Bloom 后处理）
   ├─ 初始化 GUI（Tweakpane，默认隐藏）
-  ├─ 加载地球实例（Earth-github.js）
+  ├─ 加载地球实例（Earth.ts）
   │   ├─ 创建国家边界线（176 个）
   │   ├─ 创建国家填充（45 个 Polygon 大国）
   │   ├─ 创建飞线系统
@@ -186,7 +186,7 @@ controls.autoRotateSpeed = 0.5
 controls.target.set(0, 0, 0)
 ```
 
-### 3.2 地球渲染系统 (Earth-github.js)
+### 3.2 地球渲染系统 (Earth.ts)
 
 #### 概述
 
@@ -209,7 +209,7 @@ createCountries() {
 
 // 第二层：45 个 Polygon 大国的填充
 // 使用 Earcut 三角剖分 + MeshBasicMaterial
-selectedCountries.forEach(name => {
+COUNTRY_FILL_NAMES.forEach(name => {
     const feature = getCountryFeature(name)
     const fillMesh = createPolygonFill(feature)
     countriesGroup.add(fillMesh)
@@ -311,7 +311,7 @@ addCountryLabel(countryName, labelText, color) {
 | `update(delta, camera)` | 2700 | 每帧更新 |
 | `dispose()` | 2800 | 资源清理 |
 
-### 3.3 飞船系统 (Spaceship.js)
+### 3.3 飞船系统 (Spaceship.ts)
 
 #### 概述
 
@@ -329,7 +329,7 @@ addCountryLabel(countryName, labelText, color) {
 ```
 
 ```javascript
-// Spaceship.js 轨道更新
+// Spaceship.ts 轨道更新
 updateOrbit(delta) {
     // 角度累加（帧率无关，使用 delta）
     this.angle += this.orbitSpeed * delta
@@ -396,7 +396,7 @@ const rankMultiplier =
         : 1.0
 ```
 
-### 3.4 飞船管理器 (SpaceshipManager.js)
+### 3.4 飞船管理器 (SpaceshipManager.ts)
 
 #### 概述
 
@@ -415,7 +415,6 @@ constructor(earth, scene) {
     this.lastCameraPosition = null
     this.lastDepthSortTime = 0
     this.maxShips = 20                // 桌面端（移动端 15）
-    this.maxUpdatesPerFrame = 8       // 分帧更新
 }
 ```
 
@@ -471,25 +470,23 @@ updateDepthSorting(camera) {
 }
 ```
 
-#### 分帧更新
+#### 全量更新
 
-避免单帧计算量过大，每次只更新部分飞船：
+飞船数量上限为 20，单帧位置计算量很小；为避免分帧造成抖动，`SpaceshipManager.update()` 每帧更新全部飞船，不再维护 `updateIndex` 游标。
 
 ```javascript
 update(delta) {
-    // 分帧更新飞船
-    const startIdx = this.updateIndex
-    const endIdx = Math.min(startIdx + this.maxUpdatesPerFrame, ships.length)
-
-    for (let i = startIdx; i < endIdx; i++) {
-        ships[i].update(delta)
+    for (const ship of this.spaceships.values()) {
+        if (ship.modelLoaded) ship.updatePosition(delta)
     }
-
-    this.updateIndex = endIdx >= ships.length ? 0 : endIdx
+    this.attackSystem.update(delta)
+    this.updateDepthSorting(delta)
 }
 ```
 
 ### 3.5 攻击特效系统
+
+攻击/爆炸子系统位于 `src/globe/spaceships/attacks/`：`AttackSystem.ts` 负责生命周期与资源释放，`lightning.ts` / `energyWave.ts` / `portal.ts` / `particleFlood.ts` 各实现一种特效，`path.ts` 负责避球弧线，`palette.ts` 负责类别配色。`SpaceshipManager` 只保留一个门面方法。
 
 #### 随机选择机制
 
@@ -902,10 +899,10 @@ const CATEGORY_COUNTRY_MAPPING = {
 
 | 策略 | 位置 | 效果 |
 |------|------|------|
-| 分帧更新飞船 | SpaceshipManager | 每帧 8 个，避免卡顿 |
+| 全量更新飞船 | SpaceshipManager | 20 艘以内，避免分帧抖动 |
 | 深度排序节流 | SpaceshipManager | 每 5% 帧执行，非每帧 |
-| 材质复用 | Earth-github MaterialManager | 减少 60% 重复材质 |
-| Earcut 缓冲 | Earth-github | 三角剖分结果缓存 |
+| 材质复用 | Earth MaterialManager | 减少 60% 重复材质 |
+| Earcut 缓冲 | Earth | 三角剖分结果缓存 |
 | 粒子限制 | 各种攻击效果 | 闪电 0 / 传送门 100 / 洪流 200 |
 
 ### 设备自适应
@@ -926,7 +923,6 @@ const deviceCapabilities = {
 
 // SpaceshipManager
 this.maxShips = isMobile ? 15 : 20
-this.maxUpdatesPerFrame = isMobile ? 3 : 8
 ```
 
 ### 内存管理
@@ -1005,7 +1001,7 @@ const arena = document.querySelector('#webgl')
 
 ### 添加新的攻击特效
 
-1. 在 `SpaceshipManager.js` 中添加创建方法：
+1. 在 `src/globe/spaceships/attacks/AttackSystem.ts` 中添加创建方法：
 
 ```javascript
 createNewAttackType(attack) {
@@ -1037,9 +1033,9 @@ case 5: // 新攻击类型
 
 ### 添加新的国家映射
 
-1. 在 `Earth-github.js` 的 `selectedCountries` 数组中添加国家名
+1. 在 `src/globe/earth/data.ts` 的 `COUNTRY_FILL_NAMES` 中添加国家名
 2. 确保该国家在 `globe.json` 中为 Polygon 类型且无内环
-3. 在 `getCountry3DPosition()` 中添加经纬度坐标
+3. 在 `COUNTRY_COORDINATES` 中补充经纬度回退坐标
 4. 在 `category-mapping-service.ts` 中添加映射
 
 ### 脚本说明
@@ -1100,7 +1096,6 @@ npm run metrics:glow          # 发光效果可见性指标
 | next | 14.2.16 | React 框架 |
 | three | 0.169.0 | 3D 渲染引擎 |
 | gsap | 3.12.5 | 动画库 |
-| postprocessing | 6.36.4 | 后处理特效 |
 | earcut | 2.2.4 | 多边形三角剖分 |
 | tailwindcss | 3.4.17 | CSS 框架 |
 

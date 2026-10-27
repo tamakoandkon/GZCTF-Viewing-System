@@ -14,6 +14,8 @@ interface InteractiveArenaProps {
   allTeams?: TeamInfo[]
 }
 
+const MAX_ATTACKS_PER_UPDATE = 4
+
 export function InteractiveArena({ events, teams, challenges, allTeams }: InteractiveArenaProps) {
   const globeInitedRef = useRef<boolean>(false)
   const globeControllerRef = useRef<{
@@ -29,7 +31,7 @@ export function InteractiveArena({ events, teams, challenges, allTeams }: Intera
 
   const [isInitialized, setIsInitialized] = useState(false)
   const deviceCapabilities = useDeviceCapabilities()
-  const lastEventTimeRef = useRef(0)
+  const lastEventTimeRef = useRef<number | null>(null)
 
   // 处理游戏数据中的category映射
   useEffect(() => {
@@ -70,40 +72,37 @@ export function InteractiveArena({ events, teams, challenges, allTeams }: Intera
   // 处理事件和攻击动画 - 使用allTeams确保所有队伍都能参与攻击
   useEffect(() => {
     const teamsToSearch = allTeams && allTeams.length > 0 ? allTeams : teams
-    if (events.length > 0 && teamsToSearch.length > 0 && globeControllerRef.current) {
-      const spaceshipManager = globeControllerRef.current.getSpaceshipManager()
-      if (!spaceshipManager) return
+    if (events.length === 0 || teamsToSearch.length === 0 || !globeControllerRef.current) return
 
-      const sortedEvents = [...events].sort((a, b) => b.time - a.time)
-      const newEvents = sortedEvents.filter((event) => event.time > lastEventTimeRef.current)
+    const spaceshipManager = globeControllerRef.current.getSpaceshipManager()
+    if (!spaceshipManager) return
 
-      if (newEvents.length > 0) {
-        newEvents.forEach((event) => {
-          const teamName = event.team
-          const team = teamsToSearch.find((t) => t.name === teamName)
+    const newestEventTime = events.reduce((latest, event) => Math.max(latest, event.time), 0)
 
-          if (team) {
-            const challengeTitle = event.challengeTitle
-            const challengeCategory = event.challengeCategory
+    // 第一次拿到快照时只记录游标，不回放整场历史（最多 500 条）攻击。
+    if (lastEventTimeRef.current === null) {
+      lastEventTimeRef.current = newestEventTime
+      return
+    }
 
-            // 获取目标国家
-            const targetInfo = getCategoryTargetInfo(challengeCategory)
-            const targetCountry = targetInfo.country?.name || 'China' // 默认目标
-            
-            // 创建攻击动画
-            spaceshipManager.createAttack(team.id, targetCountry, {
-              challengeCategory,
-              challengeTitle,
-              isSuccess: true,
-            })
-          }
-        })
+    const newEvents = events
+      .filter((event) => event.time > lastEventTimeRef.current!)
+      .sort((a, b) => a.time - b.time)
+      .slice(-MAX_ATTACKS_PER_UPDATE)
 
-        lastEventTimeRef.current = newEvents[0].time
-      }
+    lastEventTimeRef.current = newestEventTime
+    for (const event of newEvents) {
+      const team = teamsToSearch.find((candidate) => candidate.name === event.team)
+      if (!team) continue
+
+      const targetInfo = getCategoryTargetInfo(event.challengeCategory)
+      spaceshipManager.createAttack(team.id, targetInfo.country?.name || 'China', {
+        challengeCategory: event.challengeCategory,
+        challengeTitle: event.challengeTitle,
+        isSuccess: true,
+      })
     }
   }, [events, allTeams, teams])
-
   // 初始化 Three.js 地球
   useEffect(() => {
     if (globeInitedRef.current) return

@@ -1,18 +1,14 @@
 // @ts-nocheck
 import * as THREE from 'three';
 import { pane } from './system/gui';
-import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { sizes, initSizes } from './system/sizes';
 import { clearResizeEventListener, initResizeEventListener } from './system/resize';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { EffectComposer, RenderPass } from 'postprocessing';
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
-import { initEffect } from './effect';
 import { arcsData, majorTradeCities } from './globe/data/arcs';
 import { flightRoutes } from './globe/data/flights';
-import SpaceshipManager from './globe/SpaceshipManager';
-import CameraDirector from './globe/CameraDirector';
-import AutoShowcaseSystem from './globe/AutoShowcaseSystem';
+import SpaceshipManager from './globe/spaceships/SpaceshipManager';
+import CameraDirector from './globe/camera/CameraDirector';
+import AutoShowcaseSystem from './globe/camera/AutoShowcaseSystem';
 import PerfRecorder from './system/perf-recorder';
 import LightOrbSystem from "./globe/systems/LightOrbSystem"
 import { CeremonySystem } from "./globe/systems/CeremonySystem"
@@ -37,6 +33,11 @@ function initScene() {
     const canvas = document.getElementById('webgl');
     initSizes(canvas);
 
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent,
+    );
+    const maxShips = isMobile ? 15 : 20;
+
     const sceneParameters = {
         bgColor: '#0f1b2e', // 默认深色主题背景
     }
@@ -54,39 +55,27 @@ function initScene() {
     };
     
     window.addEventListener('themeChange', handleThemeChange);
-    
-    const envMapUrl = '/texture/royal_esplanade_1k.hdr' // 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/equirectangular/royal_esplanade_1k.hdr'
-    const envMap = new RGBELoader().load(envMapUrl, (texture) => {
-        texture.mapping = THREE.EquirectangularReflectionMapping;
-        scene.environment = texture;
-        scene.environmentIntensity = 1;
-    })
+
     // GUI面板初始隐藏
     pane.hidden = true;
 
     // 按 G 键切换 GUI 面板
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'g' || e.key === 'G') {
+    const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'g' || event.key === 'G') {
             pane.hidden = !pane.hidden;
         }
-    });
-
-    // 监听设置面板按钮触发的 toggleGUI 事件
-    window.addEventListener('toggleGUI', () => {
+    };
+    const handleToggleGui = () => {
         pane.hidden = !pane.hidden;
-    });
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('toggleGUI', handleToggleGui);
 
     const sceneFolder = pane.addFolder({title: 'scene'})
     sceneFolder.expanded = false
     sceneFolder.addBinding(scene, 'backgroundBlurriness', { step: 0.1, min: 0, max: 2 })
     sceneFolder.addBinding(sceneParameters, 'bgColor').on('change', ev=>{
         scene.background = new THREE.Color(ev.value);
-    })
-    sceneFolder.addBinding({ background: 'color'}, 'background', {
-        options: { envMap: 'envMap', color: 'color'}
-    }).on('change', (ev)=>{
-        if (ev.value === 'envMap') scene.background = envMap;
-        else scene.background = new THREE.Color(sceneParameters.bgColor);
     })
 
     let renderCamera = null;
@@ -150,20 +139,11 @@ function initScene() {
         failIfMajorPerformanceCaveat: isMac ? false : undefined,
     })
     renderer.setSize(sizes.width, sizes.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2))
     renderer.shadowMap.enabled = false
     renderer.outputColorSpace = THREE.SRGBColorSpace // 使用sRGB色彩空间
     renderer.toneMapping = THREE.ACESFilmicToneMapping // 使用ACES色调映射
     renderer.toneMappingExposure = 1.2 // 调整曝光
-
-    // postprocessing
-    const composer = new EffectComposer(renderer, {
-        multisampling: 0
-    })
-    const renderPass = new RenderPass(scene, camera);
-    composer.addPass(renderPass);
-    // effect
-    initEffect(composer, camera)
 
     const perfRecorder = new PerfRecorder({
         getCamera: () => renderCamera,
@@ -172,103 +152,28 @@ function initScene() {
     });
     let pendingPerfStopTimeout = null;
 
-    function resetSceneSettings(){
-        renderCamera = camera;
-        camera.position.set(0, 0, 6);
-        sceneParameters.bgColor = '#000';
-        scene.background = new THREE.Color(sceneParameters.bgColor);
-        ambientLight.intensity = 1;
-        light.intensity = 3;
-        sceneFolder.refresh();
-    }
-
     // earth
     let earth = null;
     let spaceshipManager = null;
     let cameraDirector = null; // 运镜导演
     let autoShowcaseSystem = null;
     let ceremonySystem = null;
+    const handleGameEnded = () => ceremonySystem?.start();
     const lightOrbSystem = new LightOrbSystem(scene)
     const cosmicBackground = new CosmicBackgroundSystem(scene, { earthRadius: 100 });
-    cosmicBackground.create(); // 不放 createEarthGithub 内——三种地球类型共享背景
-    const earthTypes = {
-        "earth-simple": ceateEarthSimple,
-        "earth-threejs-journey": createEarthThreejsJourney,
-        "earth-github": createEarthGithub
-    }
-    const defaultEarthType = 'earth-github';
-    
-    // 根据 earthTypes 动态生成 options
-    const generateEarthOptions = () => {
-        return Object.keys(earthTypes).map(key => ({
-            text: key,
-            value: key
-        }));
-    }
+    cosmicBackground.create();
+    const earthFolder = pane.addFolder({title: 'earth'})
 
     // 异步初始化地球和运镜导演
-    earthTypes[defaultEarthType]().then(() => {
+    void createEarth().then(() => {
         console.log('🎬 Earth and CameraDirector initialization completed');
     }).catch((error) => {
         console.error('🎬 Failed to initialize Earth and CameraDirector:', error);
     });
 
-    const earthFolder = pane.addFolder({title: 'earth'})
-    earthFolder.addBlade({
-        view: 'list',
-        label: 'type',
-        options: generateEarthOptions(),
-        value: defaultEarthType, // default
-    }).on('change', (ev)=>{
-        for (let i=0; i< earthFolder.children.length; i++){
-            if(i!=0) {
-                earthFolder.children[i]?.dispose()
-                earthFolder.children[i]?.element?.remove()
-            }
-        }
-        if(earth) {
-            scene.remove(earth)
-            earth.dispose()
-        }
-        resetSceneSettings()
-        earthTypes[ev.value]()
-    })
-
-    async function ceateEarthSimple() {
-        const { default: Earth } = await import('./globe/Earth-simple');
-        earth = new Earth(undefined, ()=>{
-            earthEnterAnimation(earth)
-        })
-        onEarthLoading(earth)
-        scene.add(earth)
-    }
-
-    async function createEarthThreejsJourney() {
-        const { default: Earth } = await import('./globe/Earth-threejs-journey');
-        const earthParameters = {}
-        earthParameters.atmosphereDayColor = '#00aaff'
-        earthParameters.atmosphereTwilightColor = '#ffa365'
-        earth = new Earth({
-            atmosphereDayColor: earthParameters.atmosphereDayColor,
-            atmosphereTwilightColor: earthParameters.atmosphereTwilightColor
-        }, ()=>{
-            earthEnterAnimation(earth)
-        })
-        onEarthLoading(earth)
-        scene.add(earth)
-        earthFolder.addBinding(earthParameters, 'atmosphereDayColor').on('change', ev=>{
-            earth.earthMaterial.uniforms.uAtmosphereDayColor.value.set(earthParameters.atmosphereDayColor)
-            earth.atmosphereMaterial.uniforms.uAtmosphereDayColor.value.set(earthParameters.atmosphereDayColor)
-        })
-        earthFolder.addBinding(earthParameters, 'atmosphereTwilightColor').on('change', ev=>{   
-            earth.earthMaterial.uniforms.uAtmosphereTwilightColor.value.set(earthParameters.atmosphereTwilightColor)
-            earth.atmosphereMaterial.uniforms.uAtmosphereTwilightColor.value.set(earthParameters.atmosphereTwilightColor)
-        })
-    }
-
-    async function createEarthGithub() {
+    async function createEarth() {
         try {
-            const { default: Earth } = await import('./globe/Earth-github');
+            const { default: Earth } = await import('./globe/Earth');
 
             // 调整相机位置：降低到飞船轨道高度，拉远距离以完整观察飞船
             // 飞船轨道高度：低轨道20，中轨道0，高轨道-20
@@ -380,11 +285,11 @@ function initScene() {
             // 创建飞船管理器
             spaceshipManager = new SpaceshipManager({
                 earthRadius: globeConfig.radius,
-                maxShips: 20,
+                maxShips,
                 deviceCapabilities: {
-                    isMobile: false,
-                    renderQuality: 1
-                }
+                    isMobile,
+                    renderQuality: isMobile ? 0.8 : 1,
+                },
             });
             spaceshipManager.setReferences(camera, earth);
             scene.add(spaceshipManager);
@@ -447,10 +352,7 @@ function initScene() {
 
             // 比赛结束仪式系统
             ceremonySystem = new CeremonySystem(scene);
-            window.addEventListener('game:ended', () => {
-                console.log(' Ceremony started — competition ended');
-                ceremonySystem.start();
-            });
+            window.addEventListener('game:ended', handleGameEnded);
 
             // 调试
             // 地球基本控制
@@ -843,7 +745,7 @@ function initScene() {
     }
 
     function onEarthLoading(earth){
-        document.querySelector('.loader-container').classList.remove('loaded')
+        document.querySelector('.loader-container')?.classList.remove('loaded')
         earth.visible = false
     }
 
@@ -853,7 +755,7 @@ function initScene() {
      */
     function earthEnterAnimation(earth: any) {
         earth.visible = false
-        document.querySelector('.loader-container')!.classList.add('loaded')
+        document.querySelector('.loader-container')?.classList.add('loaded')
 
         const tl = gsap.timeline({ defaults: { ease: 'power3.inOut' } })
         tl.delay(0.5)
@@ -870,7 +772,7 @@ function initScene() {
         tl.to(earth.rotation, { duration: 2.2, y: Math.PI * 6, ease: 'power2.out' }, 0)
     }
 
-    initResizeEventListener([camera], [renderer, composer]);
+    initResizeEventListener([camera], [renderer]);
 
     const clock = new THREE.Clock();
     let delta = 0;
@@ -917,7 +819,6 @@ function initScene() {
         cosmicBackground.update(delta);
         
         renderer.render(scene, renderCamera);
-        // composer.render();
 
         perfRecorder.sample({ dt: delta, cpuMs: performance.now() - cpuStart });
 
@@ -930,8 +831,15 @@ function initScene() {
         // stats.dom.remove() // stats 定义已注释，此行会抛 ReferenceError 令整个 dispose 链断裂
         clearResizeEventListener()
         cancelAnimationFrame(tickId)
-        // 清理主题变化事件监听器
+        // 清理 window 监听器
         window.removeEventListener('themeChange', handleThemeChange)
+        window.removeEventListener('keydown', handleKeyDown)
+        window.removeEventListener('toggleGUI', handleToggleGui)
+        window.removeEventListener('game:ended', handleGameEnded)
+
+        // 让 Earth 释放纹理、Canvas 标签、点云等资源
+        earth?.dispose?.()
+
         scene.traverse(child => {
             if (child instanceof THREE.Mesh) {
                 child.geometry.dispose()
@@ -960,8 +868,8 @@ function initScene() {
 
         scene.clear()
         renderer.dispose()
+        renderer.forceContextLoss?.()
         controls.dispose()
-        composer.dispose()
     }
 
     return {
