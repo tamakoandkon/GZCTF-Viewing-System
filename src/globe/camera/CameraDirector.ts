@@ -19,6 +19,8 @@ export default class CameraDirector {
     onSequenceStart: any
     onSequenceComplete: any
     onSequenceInterrupted: any
+    timeline: gsap.core.Timeline | null
+    returnTimeline: gsap.core.Timeline | null
     constructor(camera: any, controls: any, earth: any) {
         this.camera = camera;
         this.controls = controls;
@@ -44,6 +46,8 @@ export default class CameraDirector {
         this.onSequenceStart = null;
         this.onSequenceComplete = null;
         this.onSequenceInterrupted = null;
+        this.timeline = null;
+        this.returnTimeline = null;
     }
     
     /**
@@ -73,6 +77,8 @@ export default class CameraDirector {
             console.error(`Unknown cinematic preset: ${presetName}`);
             return false;
         }
+        this.returnTimeline?.kill();
+        this.returnTimeline = null;
         
         // 保存当前状态
         this.saveCurrentState();
@@ -118,6 +124,7 @@ export default class CameraDirector {
                 }
             }
         });
+        this.timeline = timeline;
         
         // 添加关键帧动画
         preset.keyframes.forEach((keyframe: any, index: any) => {
@@ -147,7 +154,7 @@ export default class CameraDirector {
                     y: keyframe.position.y,
                     z: keyframe.position.z,
                     ease: "power3.inOut" // 使用更平滑的缓动函数
-                }, preset.keyframes[index - 1].time);
+                }, 2 + preset.keyframes[index - 1].time);
                 
                 timeline.to(this.controls.target, {
                     duration: duration,
@@ -155,7 +162,7 @@ export default class CameraDirector {
                     y: keyframe.target.y,
                     z: keyframe.target.z,
                     ease: "power3.inOut" // 使用更平滑的缓动函数
-                }, preset.keyframes[index - 1].time);
+                }, 2 + preset.keyframes[index - 1].time);
             }
         });
         
@@ -166,7 +173,7 @@ export default class CameraDirector {
             y: this.originalState.position.y,
             z: this.originalState.position.z,
             ease: "power2.inOut"
-        }, preset.duration);
+        }, 2 + preset.duration);
         
         timeline.to(this.controls.target, {
             duration: 2,
@@ -174,18 +181,7 @@ export default class CameraDirector {
             y: this.originalState.target.y,
             z: this.originalState.target.z,
             ease: "power2.inOut"
-        }, preset.duration);
-        
-        // 恢复用户控制和damping设置
-        timeline.call(() => {
-            this.controls.enabled = true;
-            this.controls.autoRotate = this.originalState.autoRotate;
-            // 恢复原始damping设置
-            this.controls.enableDamping = this.originalState.enableDamping;
-            this.controls.dampingFactor = this.originalState.dampingFactor;
-            // 强制更新controls，确保内部状态与当前相机位置同步
-            this.controls.update();
-        }, null as any, preset.duration + 2);
+        }, 2 + preset.duration);
     }
     
     /**
@@ -204,9 +200,10 @@ export default class CameraDirector {
      */
     completeSequence() {
         if (this.interrupted) return;
-        
+        this.timeline = null;
         this.isDirecting = false;
         this.currentSequence = null;
+        this.restoreControls();
         
         // 触发完成回调
         if (this.onSequenceComplete) {
@@ -219,28 +216,34 @@ export default class CameraDirector {
     /**
      * 中断运镜序列
      */
-    interruptSequence() {
+    restoreControls() {
+        this.controls.enabled = true;
+        this.controls.autoRotate = this.originalState.autoRotate;
+        this.controls.enableDamping = this.originalState.enableDamping;
+        this.controls.dampingFactor = this.originalState.dampingFactor;
+        this.controls.update();
+    }
+
+    interruptSequence(returnToOriginal = true) {
         if (!this.isDirecting) return;
         
         this.interrupted = true;
         this.isDirecting = false;
         this.currentSequence = null; // 清除当前序列
         
-        // 停止所有GSAP动画
+        this.timeline?.kill();
+        this.timeline = null;
+        this.returnTimeline?.kill();
+        this.returnTimeline = null;
         gsap.killTweensOf(this.camera.position);
         gsap.killTweensOf(this.controls.target);
-        
-        // 立即恢复用户控制和damping设置
-        this.controls.enabled = true;
-        this.controls.autoRotate = this.originalState.autoRotate;
-        // 恢复原始damping设置
-        this.controls.enableDamping = this.originalState.enableDamping;
-        this.controls.dampingFactor = this.originalState.dampingFactor;
-        // 强制更新controls，确保内部状态与当前相机位置同步
-        this.controls.update();
-        
-        // 丝滑返回原始位置 — 同步 timeline
-        gsap.timeline()
+        this.restoreControls();
+
+        if (returnToOriginal) {
+            this.returnTimeline = gsap.timeline({
+                onUpdate: () => this.camera.lookAt(this.controls.target),
+                onComplete: () => { this.returnTimeline = null; },
+            })
             .to(this.camera.position, {
                 x: this.originalState.position.x,
                 y: this.originalState.position.y,
@@ -252,7 +255,8 @@ export default class CameraDirector {
                 y: this.originalState.target.y,
             z: this.originalState.target.z,
             duration: 1.5, ease: 'power2.inOut'
-        }, 0)
+            }, 0);
+        }
 
         // 触发中断回调
         if (this.onSequenceInterrupted) {
@@ -307,7 +311,9 @@ export default class CameraDirector {
      * 清理资源
      */
     dispose() {
-        this.stopSequence();
+        this.interruptSequence(false);
+        this.returnTimeline?.kill();
+        this.returnTimeline = null;
         this.camera = null;
         this.controls = null;
         this.earth = null;

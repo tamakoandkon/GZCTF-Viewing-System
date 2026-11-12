@@ -195,7 +195,7 @@ export default class SpaceshipManager extends THREE.Object3D {
         
         for (let i = 0; i < spaceshipArray.length; i++) {
             const spaceship = spaceshipArray[i];
-            if (spaceship && spaceship.modelLoaded) {
+            if (spaceship) {
                 spaceship.updatePosition(delta);
             }
         }
@@ -234,8 +234,8 @@ export default class SpaceshipManager extends THREE.Object3D {
         
         // 触发深度排序的条件：
         // 1. 相机移动距离超过阈值（10单位）
-        // 2. 或者距离上次排序超过固定时间间隔（1000ms）
-        const shouldSort = cameraMovement > 10 || this.lastDepthSortTime > 1000;
+        // delta 以秒计；每秒重算一次以覆盖相机静止时飞船的运动
+        const shouldSort = cameraMovement > 10 || this.lastDepthSortTime > 1;
         
         if (shouldSort) {
             // 更新相机位置记录
@@ -339,6 +339,7 @@ export default class SpaceshipManager extends THREE.Object3D {
     removeSpaceship(teamId: number): void {
         const spaceship = this.spaceships.get(teamId);
         if (spaceship) {
+            this.attackSystem.cancelAttacksFrom(teamId);
             this.remove(spaceship);
             spaceship.dispose();
             this.spaceships.delete(teamId);

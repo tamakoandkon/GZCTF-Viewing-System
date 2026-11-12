@@ -604,9 +604,16 @@ export default class Earth extends THREE.Object3D {
         
         // 创建动画飞线
         const flyingGeometry = new THREE.BufferGeometry();
+        const flyingCapacity = this.config.flyingLineLength + 1;
+        const positionBuffer = new Float32Array(flyingCapacity * 3);
+        const colorBuffer = new Float32Array(flyingCapacity * 3);
+        flyingGeometry.setAttribute('position', new THREE.BufferAttribute(positionBuffer, 3).setUsage(THREE.DynamicDrawUsage));
+        flyingGeometry.setAttribute('color', new THREE.BufferAttribute(colorBuffer, 3).setUsage(THREE.DynamicDrawUsage));
+        flyingGeometry.setDrawRange(0, 0);
         const flyingMaterial = this.materialManager.getFlyingLineMaterial(arc.color || '#ffffff');
         const flyingLine = new THREE.Line(flyingGeometry, flyingMaterial);
         flyingLine.renderOrder = 5;
+        flyingLine.frustumCulled = false;
         arcGroup.add(flyingLine);
         
         // 创建飞行粒子（可选）
@@ -628,8 +635,8 @@ export default class Earth extends THREE.Object3D {
             totalPoints: points.length,
             pointsPerProgress: points.length - 2,
             // 性能优化：预分配缓冲区
-            positionBuffer: new Float32Array(this.config.flyingLineLength * 3),
-            colorBuffer: new Float32Array(this.config.flyingLineLength * 3),
+            positionBuffer,
+            colorBuffer,
             lastVisibleCount: 0
         };
         
@@ -1140,11 +1147,8 @@ export default class Earth extends THREE.Object3D {
         const endIndex = Math.min(totalPoints - 1, currentIndex);
         
         if (startIndex >= endIndex) {
-            // 隐藏飞线而不是清空几何体
-            if (userData.lastVisibleCount > 0) {
-                userData.lastVisibleCount = 0;
-                this.updateGeometryBuffers(flyingGeometry, [], []);
-            }
+            flyingGeometry.setDrawRange(0, 0);
+            userData.lastVisibleCount = 0;
             return;
         }
         
@@ -1170,60 +1174,10 @@ export default class Earth extends THREE.Object3D {
             colorBuffer[bufferIndex + 2] = intensity;
         }
         
-        // 只在点数量发生变化时更新几何体
-        if (userData.lastVisibleCount !== pointCount) {
-            this.updateGeometryBuffers(
-                flyingGeometry, 
-                posBuffer.subarray(0, pointCount * 3),
-                colorBuffer.subarray(0, pointCount * 3)
-            );
-            userData.lastVisibleCount = pointCount;
-        } else {
-            // 只更新位置和颜色数据，不重建几何体
-            this.updateBufferAttributes(
-                flyingGeometry,
-                posBuffer.subarray(0, pointCount * 3),
-                colorBuffer.subarray(0, pointCount * 3)
-            );
-        }
-    }
-
-    /**
-     * 更新几何体缓冲区 - 重建属性（当点数量变化时）
-     */
-    updateGeometryBuffers(geometry, positions, colors) {
-        if (positions.length === 0) {
-            // 设置空几何体
-            geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(0), 3));
-            geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(0), 3));
-            geometry.setDrawRange(0, 0);
-        } else {
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions.slice(), 3));
-            geometry.setAttribute('color', new THREE.BufferAttribute(colors.slice(), 3));
-            geometry.setDrawRange(0, positions.length / 3);
-        }
-        
-        // 标记需要更新
-        geometry.attributes.position.needsUpdate = true;
-        geometry.attributes.color.needsUpdate = true;
-    }
-
-    /**
-     * 更新缓冲区属性数据 - 只更新数据（当点数量不变时）
-     */
-    updateBufferAttributes(geometry, positions, colors) {
-        const positionAttr = geometry.attributes.position;
-        const colorAttr = geometry.attributes.color;
-        
-        if (positionAttr && colorAttr) {
-            // 直接更新缓冲区数据
-            positionAttr.array.set(positions);
-            colorAttr.array.set(colors);
-            
-            // 标记需要更新
-            positionAttr.needsUpdate = true;
-            colorAttr.needsUpdate = true;
-        }
+        flyingGeometry.setDrawRange(0, pointCount);
+        flyingGeometry.attributes.position.needsUpdate = true;
+        flyingGeometry.attributes.color.needsUpdate = true;
+        userData.lastVisibleCount = pointCount;
     }
 
     /**
@@ -2235,7 +2189,11 @@ export default class Earth extends THREE.Object3D {
         countryMeshes.forEach(mesh => {
             // 保存原始材质
             if (!this.countryMaterials.has(`${countryName}-${mesh.uuid}`)) {
-                this.countryMaterials.set(`${countryName}-${mesh.uuid}`, mesh.material.clone());
+                this.countryMaterials.set(`${countryName}-${mesh.uuid}`, mesh.material);
+            }
+
+            if (mesh.material !== this.countryMaterials.get(`${countryName}-${mesh.uuid}`)) {
+                mesh.material.dispose();
             }
 
             // 创建高亮材质
@@ -2276,6 +2234,7 @@ export default class Earth extends THREE.Object3D {
         highlightData.meshes.forEach(mesh => {
             const materialKey = `${countryName}-${mesh.uuid}`;
             if (this.countryMaterials.has(materialKey)) {
+                if (mesh.material !== this.countryMaterials.get(materialKey)) mesh.material.dispose();
                 mesh.material = this.countryMaterials.get(materialKey);
             }
         });

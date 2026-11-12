@@ -6,9 +6,10 @@ export class ViewerApiError extends Error {
   }
 }
 
-export async function getPublicGameSnapshot(gameId: string): Promise<PublicGameSnapshot> {
+export async function getPublicGameSnapshot(gameId: string, signal?: AbortSignal): Promise<PublicGameSnapshot> {
   const response = await fetch(`/api/public/games/${encodeURIComponent(gameId)}/snapshot`, {
     method: "GET",
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10_000)]) : AbortSignal.timeout(10_000),
     credentials: "same-origin",
     cache: "no-store",
     headers: { Accept: "application/json" },

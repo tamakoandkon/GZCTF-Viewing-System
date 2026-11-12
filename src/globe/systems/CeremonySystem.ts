@@ -79,4 +79,13 @@ export class CeremonySystem {
     this.isActive = false
     this.scene.remove(this.group)
   }
+
+  dispose() {
+    this.stop()
+    this.particles.dispose()
+    this.ring.geometry.dispose()
+    ;(this.ring.material as THREE.Material).dispose()
+    this.glowMesh.geometry.dispose()
+    ;(this.glowMesh.material as THREE.Material).dispose()
+  }
 }

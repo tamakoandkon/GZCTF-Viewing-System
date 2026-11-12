@@ -21,7 +21,7 @@ const _lookM = new THREE.Matrix4();
 const _origin = new THREE.Vector3(0, 0, 0);
 const _upAxis = new THREE.Vector3(0, 1, 0);
 
-export default class Spaceship extends THREE.Object3D {
+export default class Spaceship extends THREE.Group {
     /**
      * 3D飞船模型
      * @param {{
@@ -93,6 +93,10 @@ export default class Spaceship extends THREE.Object3D {
         
         // 尾迹系统
         this.trailPositions = [];
+        this.trailColorHue = null;
+        this.trailWorldPosition = new THREE.Vector3();
+        this.trailLocalPosition = new THREE.Vector3();
+        this.trailInverseMatrix = new THREE.Matrix4();
         this.trailGeometry = null;
         this.trailMaterial = null;
         this.trailMesh = null;
@@ -261,6 +265,7 @@ export default class Spaceship extends THREE.Object3D {
         
         this.trailMesh = new THREE.Line(this.trailGeometry, this.trailMaterial);
         this.trailMesh.renderOrder = 1;
+        this.trailMesh.frustumCulled = false;
         this.add(this.trailMesh);
     }
 
@@ -548,14 +553,14 @@ export default class Spaceship extends THREE.Object3D {
 
         this.position.set(this.smoothX, this.smoothY, this.smoothZ);
 
-        // 更新尾迹
-        this.updateTrail();
-
         // 更新引擎粒子
         this.updateEngineParticles(delta);
 
         // 更新动画效果
         this.updateAnimations(delta);
+
+        // 尾迹保存世界坐标，须在本帧缩放动画后换算到局部坐标
+        this.updateTrail();
         
         // 更新标签朝向相机
         this.updateLabelOrientation();
@@ -597,14 +602,13 @@ export default class Spaceship extends THREE.Object3D {
         
         this.position.set(this.smoothX, this.smoothY, this.smoothZ);
         
-        // 更新尾迹
-        this.updateTrail();
-        
         // 更新引擎粒子
         this.updateEngineParticles(delta);
         
         // 更新动画效果
         this.updateAnimations(delta);
+
+        this.updateTrail();
         
         // 更新标签朝向相机
         this.updateLabelOrientation();
@@ -683,7 +687,7 @@ export default class Spaceship extends THREE.Object3D {
         if (this.targetOrbitOffset !== undefined) {
             const offsetDiff = this.targetOrbitOffset - this.orbitOffset;
             // 处理角度环绕（选择最短路径）
-            const normalizedDiff = ((offsetDiff + Math.PI) % (Math.PI * 2)) - Math.PI;
+            const normalizedDiff = Math.atan2(Math.sin(offsetDiff), Math.cos(offsetDiff));
             
             if (Math.abs(normalizedDiff) > 0.01) {
                 // 使用更平滑的角度插值
@@ -711,28 +715,35 @@ export default class Spaceship extends THREE.Object3D {
 
         const positions = this.trailGeometry.attributes.position.array;
         const colors = this.trailGeometry.attributes.color.array;
-        
-        // 移动尾迹位置
-        for (let i = positions.length - 1; i >= 3; i--) {
-            positions[i] = positions[i - 3];
+
+        this.updateWorldMatrix(true, false);
+        this.trailWorldPosition.setFromMatrixPosition(this.matrixWorld);
+        if (this.trailPositions.length === 0) {
+            for (let i = 0; i < positions.length / 3; i++) {
+                this.trailPositions.push(this.trailWorldPosition.clone());
+            }
+        } else {
+            this.trailPositions.unshift(this.trailPositions.pop().copy(this.trailWorldPosition));
         }
-        
-        // 添加新位置
-        positions[0] = this.position.x;
-        positions[1] = this.position.y;
-        positions[2] = this.position.z;
-        
-        // 更新颜色渐变
-        for (let i = 0; i < colors.length; i += 3) {
-            const alpha = 1 - (i / 3) / (colors.length / 3);
-            const color = new THREE.Color().setHSL(this.colorHue / 360, 0.8, 0.6);
-            colors[i] = color.r * alpha;
-            colors[i + 1] = color.g * alpha;
-            colors[i + 2] = color.b * alpha;
-        }
-        
+
+        this.trailInverseMatrix.copy(this.matrixWorld).invert();
+        this.trailPositions.forEach((worldPosition, index) => {
+            this.trailLocalPosition.copy(worldPosition).applyMatrix4(this.trailInverseMatrix);
+            this.trailLocalPosition.toArray(positions, index * 3);
+        });
         this.trailGeometry.attributes.position.needsUpdate = true;
-        this.trailGeometry.attributes.color.needsUpdate = true;
+
+        if (this.trailColorHue !== this.colorHue) {
+            const color = new THREE.Color().setHSL(this.colorHue / 360, 0.8, 0.6);
+            for (let i = 0; i < colors.length; i += 3) {
+                const alpha = 1 - (i / 3) / (colors.length / 3);
+                colors[i] = color.r * alpha;
+                colors[i + 1] = color.g * alpha;
+                colors[i + 2] = color.b * alpha;
+            }
+            this.trailColorHue = this.colorHue;
+            this.trailGeometry.attributes.color.needsUpdate = true;
+        }
     }
 
     /**

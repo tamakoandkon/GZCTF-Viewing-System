@@ -102,7 +102,7 @@ export function InteractiveArena({ events, teams, challenges, allTeams }: Intera
         isSuccess: true,
       })
     }
-  }, [events, allTeams, teams])
+  }, [events, allTeams, teams, isInitialized])
   // 初始化 Three.js 地球
   useEffect(() => {
     if (globeInitedRef.current) return
@@ -173,59 +173,35 @@ export function InteractiveArena({ events, teams, challenges, allTeams }: Intera
 
     // 始终使用allTeams，确保所有队伍都能参与攻击动画
     const teamsToUse = allTeams && allTeams.length > 0 ? allTeams : teams
-    if (teamsToUse.length > 0) {
-      // 限制最多20个飞船
-      const maxShips = Math.min(20, deviceCapabilities.isMobile ? 15 : 20)
-      const topTeams = teamsToUse.slice(0, maxShips)
+    const maxShips = deviceCapabilities.isMobile ? 15 : 20
+    const topTeams = teamsToUse.slice(0, maxShips)
+    const currentShips = spaceshipManager.spaceships
+    const currentTeamIds = new Set(currentShips.keys())
+    const newTeamIds = new Set(topTeams.map(team => team.id))
+    const hasChanges =
+      currentTeamIds.size !== newTeamIds.size ||
+      [...currentTeamIds].some((id) => !newTeamIds.has(id as number)) ||
+      [...newTeamIds].some((id) => !currentTeamIds.has(id as number))
 
-      // 获取当前存在的飞船
-      const currentShips = spaceshipManager.spaceships
-      const currentTeamIds = new Set(currentShips.keys())
-      const newTeamIds = new Set(topTeams.map(team => team.id))
-
-      // 检查是否有变化，避免不必要的更新
-      const hasChanges =
-        currentTeamIds.size !== newTeamIds.size ||
-        [...currentTeamIds].some((id) => !newTeamIds.has(id as number)) ||
-        [...newTeamIds].some((id) => !currentTeamIds.has(id as number))
-
-      if (!hasChanges) {
-        // 检查排名是否有变化
-        let rankChanged = false
-        topTeams.forEach(team => {
-          const spaceship = currentShips.get(team.id)
-          if (spaceship && spaceship.rank !== team.rank) {
-            rankChanged = true
-          }
-        })
-
-        if (!rankChanged) {
-          return // 没有变化，跳过更新
-        }
-      }
-
-      // 使用SpaceshipManager的优化更新方法
-      spaceshipManager.updateTeams(topTeams)
+    if (!hasChanges) {
+      const teamInfoChanged = topTeams.some(team => {
+        const spaceship = currentShips.get(team.id)
+        return spaceship && (
+          spaceship.rank !== team.rank ||
+          spaceship.score !== team.score ||
+          spaceship.teamName !== team.name
+        )
+      })
+      if (!teamInfoChanged) return
     }
+
+    spaceshipManager.updateTeams(topTeams)
   }, [allTeams, teams, isInitialized, deviceCapabilities.isMobile])
 
   // 用户交互时暂停自动展示 15 秒
   const handleUserInteraction = () => {
     const autoSystem = globeControllerRef.current?.getAutoShowcaseSystem?.()
     if (autoSystem?.suppressAuto) autoSystem.suppressAuto(15000)
-  }
-
-  if (!teams || teams.length === 0) {
-    return (
-      <div className="w-full h-full cyber-panel relative overflow-hidden">
-        <div className="cyber-panel-header text-center">赛场</div>
-        <div className="relative w-full h-[calc(100%-40px)] flex items-center justify-center">
-          <div className="text-center text-gray-400">
-            <div className="text-xl">暂无队伍数据</div>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -252,6 +228,11 @@ export function InteractiveArena({ events, teams, challenges, allTeams }: Intera
         </div>
         {/* 提供给 scene.js 的加载容器，避免空指针 */}
         <div className="loader-container" style={{ display: "none" }} />
+        {(!teams || teams.length === 0) && (
+          <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none">
+            暂无队伍数据
+          </div>
+        )}
 
       </div>
     </div>
