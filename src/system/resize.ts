@@ -4,6 +4,7 @@ let cameras: any[] = []
 let renderers: any[] = []
 let canvas: HTMLCanvasElement | null = null
 let resizeObserver: ResizeObserver | null = null
+let maxPixelRatio = 2
 
 function measureCanvas(): { width: number; height: number } | null {
     const nextCanvas = document.getElementById('webgl') as HTMLCanvasElement | null
@@ -31,13 +32,16 @@ function resizeEvent() {
 
     for (const renderer of renderers) {
         renderer.setSize(sizes.width, sizes.height)
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio))
     }
 }
 
-export function initResizeEventListener(_cameras: any[] = [], _renderers: any[] = []) {
+export function initResizeEventListener(_cameras: any[] = [], _renderers: any[] = [], pixelRatioCap = 2) {
+    window.removeEventListener('resize', resizeEvent)
+    resizeObserver?.disconnect()
     cameras = _cameras
     renderers = _renderers
+    maxPixelRatio = pixelRatioCap
     window.addEventListener('resize', resizeEvent)
 
     const canvasElement = document.getElementById('webgl')
@@ -55,4 +59,5 @@ export function clearResizeEventListener() {
     cameras = []
     renderers = []
     canvas = null
+    maxPixelRatio = 2
 }

@@ -27,7 +27,6 @@ export default function ScoreboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const hasDataRef = useRef(false)
-  const requestInFlightRef = useRef(false)
   const [currentGroupIndex, setCurrentGroupIndex] = useState(0)
   const [isGUIVisible, setIsGUIVisible] = useState(false)
   const totalGroups = Math.ceil((scoreboard?.items.length ?? 0) / 10)
@@ -35,18 +34,33 @@ export default function ScoreboardPage() {
   const activeGroupIndex = totalGroups > 0 ? currentGroupIndex % totalGroups : 0
 
   useEffect(() => {
+    let disposed = false
+    let requestInFlight = false
+    let activeRequest: AbortController | null = null
+    hasDataRef.current = false
+
     async function fetchData() {
-      if (requestInFlightRef.current) return
-      requestInFlightRef.current = true
+      if (requestInFlight) return
+      requestInFlight = true
+      const controller = new AbortController()
+      activeRequest = controller
       try {
+        if (!hasDataRef.current) {
+          setLoading(true)
+          setScoreboard(null)
+          setEvents([])
+          setGame(null)
+        }
         setError(null)
-        const snapshot = await getPublicGameSnapshot(gameId)
+        const snapshot = await getPublicGameSnapshot(gameId, controller.signal)
+        if (disposed) return
         setScoreboard(snapshot.scoreboard)
         setEvents(snapshot.events)
         setGame(snapshot.game)
         hasDataRef.current = true
         setError(null)
       } catch (err) {
+        if (disposed) return
         console.error("Failed to fetch data:", err)
         if (err instanceof ViewerApiError && err.status === 401) {
           router.replace("/")
@@ -62,15 +76,20 @@ export default function ScoreboardPage() {
           setError("系统连接失败，请稍后重试")
         }
       } finally {
-        requestInFlightRef.current = false
-        setLoading(false)
+        requestInFlight = false
+        if (activeRequest === controller) activeRequest = null
+        if (!disposed) setLoading(false)
       }
     }
 
     if (gameId) {
       fetchData()
       const intervalId = setInterval(fetchData, 15000)
-      return () => clearInterval(intervalId)
+      return () => {
+        disposed = true
+        activeRequest?.abort()
+        clearInterval(intervalId)
+      }
     }
   }, [gameId, router])
 

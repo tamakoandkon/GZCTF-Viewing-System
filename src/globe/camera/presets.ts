@@ -62,16 +62,4 @@ export const CAMERA_PRESETS: Record<string, CameraPreset> = {
             { time: 10, position: { x: 0, y: 50, z: -400 }, target: { x: 0, y: 0, z: 0 } },
         ],
     },
-    followSpaceship: {
-        name: "跟随飞船",
-        duration: 10,
-        keyframes: [
-            { time: 0, position: { x: 0, y: 50, z: -400 }, target: { x: 0, y: 0, z: 0 } },
-            { time: 2, position: { x: 200, y: 50, z: -300 }, target: { x: 150, y: 0, z: 0 } },
-            { time: 4, position: { x: 300, y: 50, z: -200 }, target: { x: 250, y: 0, z: 0 } },
-            { time: 6, position: { x: 200, y: 50, z: -100 }, target: { x: 150, y: 0, z: 0 } },
-            { time: 8, position: { x: 0, y: 50, z: -200 }, target: { x: 0, y: 0, z: 0 } },
-            { time: 10, position: { x: 0, y: 50, z: -400 }, target: { x: 0, y: 0, z: 0 } },
-        ],
-    },
 };

@@ -16,6 +16,13 @@ export default class AutoShowcaseSystem {
     isRotatingCamera: boolean
     top3Timer: any
     cameraTimer: any
+    top3RetryTimer: ReturnType<typeof setTimeout> | null
+    cameraRetryTimer: ReturnType<typeof setTimeout> | null
+    showcaseStartTimer: ReturnType<typeof setTimeout> | null
+    showcaseEndTimer: ReturnType<typeof setTimeout> | null
+    cameraEndTimer: ReturnType<typeof setTimeout> | null
+    returnTimeline: gsap.core.Timeline | null
+    returnFrame: number | null
     followAnimationFrame: any
     currentShowcaseSpaceships: any[]
     currentSpaceshipIndex: number
@@ -56,6 +63,13 @@ export default class AutoShowcaseSystem {
         // 定时器
         this.top3Timer = null;
         this.cameraTimer = null;
+        this.top3RetryTimer = null;
+        this.cameraRetryTimer = null;
+        this.showcaseStartTimer = null;
+        this.showcaseEndTimer = null;
+        this.cameraEndTimer = null;
+        this.returnTimeline = null;
+        this.returnFrame = null;
         
         // 动态跟随相关
         this.followAnimationFrame = null;
@@ -123,7 +137,7 @@ export default class AutoShowcaseSystem {
         
         // 展示配置
         this.showcaseDuration = 30000; // 30秒展示时间
-        this.cameraSequenceDuration = 12000; // 12秒运镜时间
+        this.cameraSequenceDuration = 14000; // 2秒入镜 + 10秒预设 + 2秒返回
         
         // 冲突控制
         this.lastShowcaseTime = 0;
@@ -149,7 +163,7 @@ export default class AutoShowcaseSystem {
         });
     }
   update(delta: any) {
-        if (!this.isShowcasing || !this.cameraDirector) return;
+        if ((!this.isShowcasing && !this.isRotatingCamera) || !this.cameraDirector) return;
 
         const now: number = performance.now();
 
@@ -160,12 +174,17 @@ export default class AutoShowcaseSystem {
                 this.transitionEndTime = 0;
                 this.spaceshipManager?.setForcedUpdateShipId?.(null);
             } else {
-                if (!this.transitionTargetSpaceship || !this.transitionTargetSpaceship.modelLoaded) {
+                if (!this.isCurrentShip(this.transitionTargetSpaceship)) {
                     const fallback = this.getTop3Spaceships()[0];
                     if (fallback) {
                         this.startTransitionToSpaceship(fallback, 1.2);
+                        if (this.isRotatingCamera && !this.isShowcasing) {
+                            this.currentFollowingSpaceship = fallback;
+                            this.shouldFollow = true;
+                        }
                     } else {
-                        this.stopTop3Showcase();
+                        if (this.isShowcasing) this.stopTop3Showcase();
+                        else this.stopCameraRotation();
                     }
                     return;
                 }
@@ -176,15 +195,21 @@ export default class AutoShowcaseSystem {
 
         if (!this.shouldFollow) return;
 
-        if (!this.currentFollowingSpaceship || !this.currentFollowingSpaceship.modelLoaded) {
+        if (!this.isCurrentShip(this.currentFollowingSpaceship)) {
             const fallback = this.getTop3Spaceships()[0];
             if (fallback) {
                 this.shouldFollow = false;
                 this.currentFollowingSpaceship = null;
                 this.followEndTime = 0;
                 this.startTransitionToSpaceship(fallback, 1.2);
+                if (this.isRotatingCamera && !this.isShowcasing) {
+                    this.currentFollowingSpaceship = fallback;
+                    this.shouldFollow = true;
+                    this.followEndTime = now + this.cameraSequenceDuration;
+                }
             } else {
-                this.stopTop3Showcase();
+                if (this.isShowcasing) this.stopTop3Showcase();
+                else this.stopCameraRotation();
             }
             return;
         }
@@ -250,8 +275,15 @@ export default class AutoShowcaseSystem {
         
         // 如果正在展示，停止展示
         if (this.isShowcasing) {
-            this.stopTop3Showcase();
+            this.stopTop3Showcase(false);
         }
+        if (this.isRotatingCamera) this.stopCameraRotation(false);
+        this.clearDelayedActions();
+        this.returnTimeline?.kill();
+        this.returnTimeline = null;
+        if (this.returnFrame !== null) cancelAnimationFrame(this.returnFrame);
+        this.returnFrame = null;
+        if (this.cameraDirector?.isDirecting) this.restoreCameraControls();
         
         console.log('AutoShowcaseSystem stopped');
     }
@@ -287,6 +319,34 @@ export default class AutoShowcaseSystem {
             this.cameraTimer = null;
         }
     }
+
+    clearDelayedActions() {
+        for (const timer of [this.top3RetryTimer, this.cameraRetryTimer, this.showcaseStartTimer,
+            this.showcaseEndTimer, this.cameraEndTimer]) {
+            if (timer !== null) clearTimeout(timer);
+        }
+        this.top3RetryTimer = null;
+        this.cameraRetryTimer = null;
+        this.showcaseStartTimer = null;
+        this.showcaseEndTimer = null;
+        this.cameraEndTimer = null;
+    }
+
+    retryTop3() {
+        if (this.top3RetryTimer !== null) return;
+        this.top3RetryTimer = setTimeout(() => {
+            this.top3RetryTimer = null;
+            this.scheduleTop3Showcase();
+        }, 5000);
+    }
+
+    retryCamera() {
+        if (this.cameraRetryTimer !== null) return;
+        this.cameraRetryTimer = setTimeout(() => {
+            this.cameraRetryTimer = null;
+            this.scheduleCameraRotation();
+        }, 5000);
+    }
     
     /**
      * 调度前三名展示
@@ -296,9 +356,7 @@ export default class AutoShowcaseSystem {
         
         const now = Date.now();
         if (now < this.userSuppressUntil) {
-            setTimeout(() => {
-                this.scheduleTop3Showcase();
-            }, 5000);
+            this.retryTop3();
             return;
         }
         
@@ -307,13 +365,11 @@ export default class AutoShowcaseSystem {
             (now - this.lastCameraTime) < this.minIntervalBetweenActions) {
             console.log('Top3 showcase delayed due to camera rotation conflict');
             // 延迟5秒后重试
-            setTimeout(() => {
-                this.scheduleTop3Showcase();
-            }, 5000);
+            this.retryTop3();
             return;
         }
         if (this.cameraDirector && this.cameraDirector.isRunning() && !this.isShowcasing) {
-            this.cameraDirector.interruptSequence();
+            this.cameraDirector.interruptSequence(false);
         }
         
         this.startTop3Showcase();
@@ -327,9 +383,7 @@ export default class AutoShowcaseSystem {
         
         const now = Date.now();
         if (now < this.userSuppressUntil) {
-            setTimeout(() => {
-                this.scheduleCameraRotation();
-            }, 5000);
+            this.retryCamera();
             return;
         }
         
@@ -338,15 +392,11 @@ export default class AutoShowcaseSystem {
             (now - this.lastShowcaseTime) < this.minIntervalBetweenActions) {
             console.log('Camera rotation delayed due to showcase conflict');
             // 延迟5秒后重试
-            setTimeout(() => {
-                this.scheduleCameraRotation();
-            }, 5000);
+            this.retryCamera();
             return;
         }
         if (this.cameraDirector && this.cameraDirector.isRunning()) {
-            setTimeout(() => {
-                this.scheduleCameraRotation();
-            }, 5000);
+            this.retryCamera();
             return;
         }
         
@@ -357,7 +407,7 @@ export default class AutoShowcaseSystem {
      * 开始前三名展示
      */
     startTop3Showcase() {
-        if (this.isShowcasing || !this.cameraDirector || !this.spaceshipManager) {
+        if (!this.isActive || this.isShowcasing || !this.cameraDirector || !this.spaceshipManager) {
             return;
         }
         
@@ -369,8 +419,13 @@ export default class AutoShowcaseSystem {
         }
         
         if (this.cameraDirector.isRunning()) {
-            this.cameraDirector.interruptSequence();
+            this.cameraDirector.interruptSequence(false);
         }
+
+        this.returnTimeline?.kill();
+        this.returnTimeline = null;
+        if (this.returnFrame !== null) cancelAnimationFrame(this.returnFrame);
+        this.returnFrame = null;
 
         this.isShowcasing = true;
         this.lastShowcaseTime = Date.now();
@@ -386,7 +441,8 @@ export default class AutoShowcaseSystem {
         this.createTop3ShowcaseSequence(top3Spaceships);
         
         // 设置展示结束定时器
-        setTimeout(() => {
+        this.showcaseEndTimer = setTimeout(() => {
+            this.showcaseEndTimer = null;
             this.stopTop3Showcase();
         }, this.showcaseDuration);
     }
@@ -394,8 +450,14 @@ export default class AutoShowcaseSystem {
     /**
      * 停止前三名展示
      */
-    stopTop3Showcase() {
+    stopTop3Showcase(returnToOriginal = true) {
         if (!this.isShowcasing) return;
+        const showcaseStarted = this.showcaseStartTimer === null;
+
+        if (this.showcaseStartTimer !== null) clearTimeout(this.showcaseStartTimer);
+        if (this.showcaseEndTimer !== null) clearTimeout(this.showcaseEndTimer);
+        this.showcaseStartTimer = null;
+        this.showcaseEndTimer = null;
         
         this.isShowcasing = false;
         this.isTransitioning = false;
@@ -423,9 +485,15 @@ export default class AutoShowcaseSystem {
             gsap.killTweensOf(this.cameraDirector.camera.position);
             gsap.killTweensOf(this.cameraDirector.controls.target);
             
-            // 立即返回原始位置
-            this.returnToOriginalPosition();
+            if (returnToOriginal && showcaseStarted) {
+                this.returnToOriginalPosition();
+            } else if (showcaseStarted) {
+                this.returnTimeline?.kill();
+                this.returnTimeline = null;
+                this.restoreCameraControls();
+            }
         }
+        if (!showcaseStarted) this.currentShowcaseSpaceships = [];
         
         // 触发结束回调
         if (this.onShowcaseEnd) {
@@ -443,9 +511,7 @@ export default class AutoShowcaseSystem {
             return;
         }
         if (this.cameraDirector.isRunning()) {
-            setTimeout(() => {
-                this.scheduleCameraRotation();
-            }, 5000);
+            this.retryCamera();
             return;
         }
         
@@ -464,11 +530,30 @@ export default class AutoShowcaseSystem {
         }
         
         // 开始运镜序列
-        const success = this.cameraDirector.startSequence(nextMode);
+        let success = false;
+        if (nextMode === 'followSpaceship') {
+            const spaceship = this.getTop3Spaceships()[0];
+            if (spaceship) {
+                this.cameraDirector.saveCurrentState();
+                this.cameraDirector.isDirecting = true;
+                this.cameraDirector.currentSequence = nextMode;
+                this.cameraDirector.controls.enabled = false;
+                this.cameraDirector.controls.autoRotate = false;
+                this.cameraDirector.controls.enableDamping = false;
+                this.startTransitionToSpaceship(spaceship, 2);
+                this.currentFollowingSpaceship = spaceship;
+                this.shouldFollow = true;
+                this.followEndTime = performance.now() + this.cameraSequenceDuration;
+                success = true;
+            }
+        } else {
+            success = this.cameraDirector.startSequence(nextMode);
+        }
         
         if (success) {
             // 设置运镜结束定时器
-            setTimeout(() => {
+            this.cameraEndTimer = setTimeout(() => {
+                this.cameraEndTimer = null;
                 this.stopCameraRotation();
             }, this.cameraSequenceDuration);
         } else {
@@ -479,9 +564,21 @@ export default class AutoShowcaseSystem {
     /**
      * 停止运镜轮换
      */
-    stopCameraRotation() {
+    stopCameraRotation(returnToOriginal = true) {
         if (!this.isRotatingCamera) return;
-        
+        if (this.cameraEndTimer !== null) clearTimeout(this.cameraEndTimer);
+        this.cameraEndTimer = null;
+        if (this.cameraDirector?.currentSequence === 'followSpaceship') {
+            this.isTransitioning = false;
+            this.shouldFollow = false;
+            this.currentFollowingSpaceship = null;
+            this.transitionTargetSpaceship = null;
+            this.spaceshipManager?.setForcedUpdateShipId?.(null);
+            if (returnToOriginal) this.returnToOriginalPosition();
+            else this.restoreCameraControls();
+        } else if (!returnToOriginal) {
+            this.cameraDirector?.interruptSequence(false);
+        }
         this.isRotatingCamera = false;
         
         console.log('Camera rotation ended');
@@ -494,11 +591,16 @@ export default class AutoShowcaseSystem {
         if (!this.spaceshipManager) return [];
         
         const spaceships = Array.from(this.spaceshipManager.spaceships.values())
-            .filter((spaceship: any) => spaceship.modelLoaded)
+            .filter((spaceship: any) => this.isCurrentShip(spaceship) && spaceship.rank <= 3)
             .sort((a: any, b: any) => a.rank - b.rank)
             .slice(0, 3);
         
         return spaceships;
+    }
+
+    isCurrentShip(spaceship: any) {
+        return !!spaceship && spaceship.modelLoaded && !spaceship.isDisposed &&
+            this.spaceshipManager?.spaceships?.get(spaceship.teamId) === spaceship;
     }
     
     /**
@@ -514,7 +616,9 @@ export default class AutoShowcaseSystem {
         this.isTransitioning = false;
         
         // 等待一小段时间，确保飞船位置稳定
-        setTimeout(() => {
+        this.showcaseStartTimer = setTimeout(() => {
+            this.showcaseStartTimer = null;
+            if (!this.isActive || !this.isShowcasing || !this.cameraDirector) return;
             // 保存当前相机状态
             this.cameraDirector.saveCurrentState();
             
@@ -549,10 +653,7 @@ export default class AutoShowcaseSystem {
         
         // 创建GSAP时间轴
         this.spaceshipShowcaseTimeline = gsap.timeline({
-            onComplete: () => {
-                // 所有飞船展示完成后，平滑返回原始位置
-                this.returnToOriginalPosition();
-            }
+            onComplete: () => this.stopTop3Showcase()
         });
         
         let currentTime: any = 0;
@@ -755,6 +856,8 @@ export default class AutoShowcaseSystem {
      */
     returnToOriginalPosition() {
         if (!this.cameraDirector) return;
+        this.returnTimeline?.kill();
+        this.returnTimeline = null;
         
         // 停止跟随循环
         if (this.followAnimationFrame) {
@@ -764,9 +867,11 @@ export default class AutoShowcaseSystem {
         
         const tl = gsap.timeline({
             onComplete: () => {
+                this.returnTimeline = null;
                 this.completeShowcase();
             }
         });
+        this.returnTimeline = tl;
 
         tl.to(this.cameraDirector.camera.position, {
             duration: 2,
@@ -800,7 +905,9 @@ export default class AutoShowcaseSystem {
         controls.dampingFactor = 0;
         controls.update();
 
-        requestAnimationFrame(() => {
+        this.returnFrame = requestAnimationFrame(() => {
+            this.returnFrame = null;
+            if (!this.cameraDirector || !this.isActive) return;
             controls.enableDamping = original.enableDamping;
             controls.dampingFactor = original.dampingFactor;
             controls.autoRotate = original.autoRotate;
@@ -812,6 +919,19 @@ export default class AutoShowcaseSystem {
             this.currentShowcaseSpaceships = [];
             this.currentSpaceshipIndex = 0;
         });
+    }
+
+    restoreCameraControls() {
+        if (!this.cameraDirector) return;
+        const controls = this.cameraDirector.controls;
+        const original = this.cameraDirector.originalState;
+        controls.enableDamping = original.enableDamping;
+        controls.dampingFactor = original.dampingFactor;
+        controls.autoRotate = original.autoRotate;
+        controls.enabled = true;
+        controls.update();
+        this.cameraDirector.isDirecting = false;
+        this.cameraDirector.currentSequence = null;
     }
     
     /**
@@ -871,6 +991,13 @@ export default class AutoShowcaseSystem {
   suppressAuto(durationMs = 15000) {
         const now = Date.now();
         this.userSuppressUntil = Math.max(this.userSuppressUntil, now + durationMs);
+        if (this.isShowcasing) this.stopTop3Showcase(false);
+        if (this.isRotatingCamera) this.stopCameraRotation(false);
+        if (this.returnTimeline) {
+            this.returnTimeline.kill();
+            this.returnTimeline = null;
+            this.restoreCameraControls();
+        }
     }
     
     /**
@@ -902,6 +1029,10 @@ export default class AutoShowcaseSystem {
      */
     dispose() {
         this.stop();
+        this.returnTimeline?.kill();
+        this.returnTimeline = null;
+        if (this.returnFrame !== null) cancelAnimationFrame(this.returnFrame);
+        this.returnFrame = null;
         
         // 停止跟随循环
         if (this.followAnimationFrame) {

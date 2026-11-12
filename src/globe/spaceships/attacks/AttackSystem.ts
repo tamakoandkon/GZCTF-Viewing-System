@@ -48,6 +48,9 @@ export default class AttackSystem extends THREE.Object3D {
     private explosionIdCounter = 0;
     private disposals: DisposableEntry[] = [];
     private readonly maxDisposalsPerFrame: number;
+    private pendingFrames = new Set<number>();
+    private pendingTimeouts = new Set<ReturnType<typeof setTimeout>>();
+    private disposed = false;
 
     constructor(host: AttackHost) {
         super();
@@ -63,6 +66,10 @@ export default class AttackSystem extends THREE.Object3D {
     }
 
     clearAll(): void {
+        for (const frame of this.pendingFrames) cancelAnimationFrame(frame);
+        for (const timer of this.pendingTimeouts) clearTimeout(timer);
+        this.pendingFrames.clear();
+        this.pendingTimeouts.clear();
         for (const attack of this.attacks) {
             if (attack.objects) {
                 for (const obj of attack.objects) {
@@ -77,8 +84,21 @@ export default class AttackSystem extends THREE.Object3D {
     }
 
     dispose(): void {
+        this.disposed = true;
         this.clearAll();
         this.removeFromParent();
+    }
+
+    cancelAttacksFrom(teamId: number): void {
+        this.attacks = this.attacks.filter(attack => {
+            if (attack.fromSpaceship?.teamId !== teamId) return true;
+            for (const obj of attack.objects ?? []) {
+                this.remove(obj);
+                this.disposals.push(...collectDisposables(obj));
+            }
+            attack.fromSpaceship.setActive(false);
+            return false;
+        });
     }
 
     private processDeferredDisposals(): void {
@@ -243,7 +263,11 @@ export default class AttackSystem extends THREE.Object3D {
         // 飞船激化状态恢复（延迟到下一帧，避免与攻击清理挤在同一帧）
         if (attack.fromSpaceship) {
             const ship = attack.fromSpaceship;
-            requestAnimationFrame(() => ship.setActive(false));
+            const frame = requestAnimationFrame(() => {
+                this.pendingFrames.delete(frame);
+                if (!this.disposed && this.host.spaceships.get(ship.teamId) === ship) ship.setActive(false);
+            });
+            this.pendingFrames.add(frame);
         }
 
         // 创建爆炸效果（保持即时，视觉反馈不应延迟）
@@ -258,11 +282,13 @@ export default class AttackSystem extends THREE.Object3D {
 
             console.log(`Triggering country highlight for ${attack.targetCountry} with color ${challengeColor}`);
 
-            setTimeout(() => {
-                if (this.host.earth && this.host.earth.highlightCountry) {
+            const timer = setTimeout(() => {
+                this.pendingTimeouts.delete(timer);
+                if (!this.disposed && this.host.earth && this.host.earth.highlightCountry) {
                     this.host.earth.highlightCountry(targetCountry, challengeColor, 0.8);
                 }
             }, 300);
+            this.pendingTimeouts.add(timer);
         }
     }
 

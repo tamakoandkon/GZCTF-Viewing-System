@@ -158,6 +158,7 @@ function initScene() {
     let cameraDirector = null; // 运镜导演
     let autoShowcaseSystem = null;
     let ceremonySystem = null;
+    let disposed = false;
     const handleGameEnded = () => ceremonySystem?.start();
     const lightOrbSystem = new LightOrbSystem(scene)
     const cosmicBackground = new CosmicBackgroundSystem(scene, { earthRadius: 100 });
@@ -174,6 +175,7 @@ function initScene() {
     async function createEarth() {
         try {
             const { default: Earth } = await import('./globe/Earth');
+            if (disposed) return;
 
             // 调整相机位置：降低到飞船轨道高度，拉远距离以完整观察飞船
             // 飞船轨道高度：低轨道20，中轨道0，高轨道-20
@@ -772,7 +774,7 @@ function initScene() {
         tl.to(earth.rotation, { duration: 2.2, y: Math.PI * 6, ease: 'power2.out' }, 0)
     }
 
-    initResizeEventListener([camera], [renderer]);
+    initResizeEventListener([camera], [renderer], isMobile ? 1.5 : 2);
 
     const clock = new THREE.Clock();
     let delta = 0;
@@ -828,6 +830,8 @@ function initScene() {
     render();
 
     function dispose(){
+        if (disposed) return;
+        disposed = true;
         // stats.dom.remove() // stats 定义已注释，此行会抛 ReferenceError 令整个 dispose 链断裂
         clearResizeEventListener()
         cancelAnimationFrame(tickId)
@@ -836,6 +840,11 @@ function initScene() {
         window.removeEventListener('keydown', handleKeyDown)
         window.removeEventListener('toggleGUI', handleToggleGui)
         window.removeEventListener('game:ended', handleGameEnded)
+        autoShowcaseSystem?.dispose()
+        if (pendingPerfStopTimeout) clearTimeout(pendingPerfStopTimeout)
+        perfRecorder.stop({ download: false })
+        cameraDirector?.dispose()
+        spaceshipManager?.dispose()
 
         // 让 Earth 释放纹理、Canvas 标签、点云等资源
         earth?.dispose?.()
@@ -846,15 +855,6 @@ function initScene() {
                 child.material.dispose()
             }
         })
-        // 清理飞船管理器
-        spaceshipManager?.dispose()
-        
-        // 清理运镜导演
-        cameraDirector?.dispose()
-        
-        // 清理自动展示系统
-        autoShowcaseSystem?.dispose()
-        
         // 清理光团
         lightOrbSystem.orbs.forEach((orb: any) => {
             scene.remove(orb);
@@ -864,6 +864,9 @@ function initScene() {
 
         // 清理宇宙背景
         cosmicBackground?.dispose();
+        ceremonySystem?.dispose()
+        sceneFolder.dispose()
+        earthFolder.dispose()
 
 
         scene.clear()
